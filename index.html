@@ -593,7 +593,7 @@ function groupsOf(x){
   return out;
 }
 const groupsPer = size => size >= 20 ? 99 : size >= 10 ? 2 : 1;   // 区切りの大きさ→いくつの区切りをまとめて出すか
-if(!S.rnd) S.rnd = {};                                    // 乱取りの「まだ出ていない語」{all／k／y: [問題番号]}（一周するまで持ち越す）
+if(!S.rnd) S.rnd = {};                                    // 乱取りの周 {all／k／y: {left:まだ出ていない語, miss:この周で間違えた語, r:何周目, n:この周の語数}}（次の回に持ち越す）
 /* 目標：生徒が自分で決める（合格点〜満点・5点きざみ）。未設定なら最初に聞く */
 const clampGoal = g => Math.min(TEST.full, Math.max(TEST.pass, Math.round(g / TEST.goalStep) * TEST.goalStep));
 const goal = () => clampGoal(S.goal || TEST.pass);
@@ -743,12 +743,16 @@ function newChunk(stageId, group){
 function wrongQueue(){ return revengeFirst(wrongIdx().sort(byOld)); }
 /* 乱取り：一周するまで「まだ出ていない語」を持ち越す（ぜんぶ／書き／読みで別々） */
 function rndAll(){ return myIdx().filter(i => !isLater(i)); }
-function rndLeft(){
-  const all = rndAll(), set = new Set(all);
-  let r = (S.rnd[S.only] || []).filter(i => set.has(i));
-  if(!S.rnd[S.only]) r = shuffle(all.slice());
-  S.rnd[S.only] = r; return r;
+/* 1周目＝ぜんぶの語。2周目からは前の周で間違えた語だけ。間違いが0の周で完了 */
+function rndState(){
+  let st = S.rnd[S.only];
+  if(!st || Array.isArray(st)) st = S.rnd[S.only] = {left: shuffle(rndAll()), miss:[], r:1, n: rndAll().length};
+  const set = new Set(rndAll());
+  st.left = st.left.filter(i => set.has(i)); st.miss = st.miss.filter(i => set.has(i));
+  return st;
 }
+function rndLeft(){ return rndState().left; }
+function rndN(){ const st = rndState(); return st.r === 1 ? rndAll().length : st.n; }
 function randomQueue(){ return revengeFirst(rndLeft().filter(i => !out(i))); }
 function randName(){ return ({all:'ぜんぶ', k:'書き', y:'読み'})[S.only]; }
 /* 本番模試：本番と同じく書き15問・読み5問（範囲が足りなければある分だけ） */
@@ -868,7 +872,7 @@ function home(){
     ${nLat ? `<div class="note">あとまわし${nLat}語（練習には出ない・模試とめくり札には出る。図鑑で戻せる）</div>` : ''}
     <div class="sec">ほかの稽古</div>
     <div class="navs">
-      ${nav('rand', '乱取り', `${randName()} 残り${rndLeft().length}語（${rndAll().length}語）`)}
+      ${nav('rand', '乱取り', rndState().r === 1 ? `${randName()} 残り${rndLeft().length}語（${rndN()}語）` : `${randName()} ${kn(rndState().r)}周目 残り${rndLeft().length}語`)}
       ${nav('wrong', '間違えた語', wrongIdx().length ? `${randName()}・${wrongIdx().length}語` : 'いまは0語', !wrongIdx().length)}
       ${nav('mock', '本番模試', '20問・10分')}
       ${nav('zukan', '図鑑', '語の一覧・あとまわし')}
@@ -941,14 +945,24 @@ function redoDone(){
 /* 乱取りで一周した */
 function roundDone(){
   stopTimer(); R.pausedAt = Date.now();
-  const n = rndAll().length, left = Math.max(0, R.end - Date.now());
-  delete S.rnd[S.only]; save();
-  app.innerHTML = `<h1>乱取り 一周</h1>
+  const st = rndState(), n = rndN(), m = st.miss.slice(), r = st.r, left = Math.max(0, R.end - Date.now());
+  // 次の周をここで決めて残す（この画面で終わっても、次の乱取りは続きから）
+  if(m.length) S.rnd[S.only] = {left: shuffle(m), miss:[], r: r + 1, n: m.length};
+  else delete S.rnd[S.only];
+  save();
+  app.innerHTML = m.length ? `<h1>乱取り ${kn(r)}周目おわり</h1>
     <div class="card center">
-      <div class="stamp big-stamp">一周<br>達成</div>
-      <div style="margin-top:6px">${randName()}${n}語を、ひと通り</div>
+      <div class="stamp big-stamp">${kn(r)}周<br>達成</div>
+      <div style="margin-top:6px">${n}語中 <b>${n - m.length}語</b> 正解</div>
+      <div>間違えた語は <b>${m.length}語</b>。次の周はこの${m.length}語だけ</div>
     </div>
-    <button class="btn" id="nx">もう一周<small>並べ直して最初から${left > 0 ? `・残り ${clock()}` : ''}</small></button>
+    <button class="btn" id="nx">間違えた${m.length}語だけ、${kn(r + 1)}周目<small>ぜんぶ正解するまで${left > 0 ? `・残り ${clock()}` : ''}</small></button>` : `<h1>乱取り 完了</h1>
+    <div class="card center">
+      <div class="stamp big-stamp">乱取り<br>完了</div>
+      <div style="margin-top:6px">${r > 1 ? `${kn(r)}周目で、間違えた語がぜんぶ正解に` : `${randName()}${n}語を、一度も間違えずに一周`}</div>
+    </div>
+    <button class="btn" id="nx">ぜんぶの語で、また最初から<small>並べ直して1周目${left > 0 ? `・残り ${clock()}` : ''}</small></button>`;
+  app.innerHTML += `
     <button class="btn sub" id="fin">終わる</button>`;
   confetti();
   document.getElementById('nx').onclick = () => resume(left, 'random');
@@ -1196,8 +1210,8 @@ function kindBar(){
   if(R.kind === 'stage') return stageBar() + chunkBar();
   if(R.kind === 'sweep') return `<div class="sbar"><span>総ざらい（${R.sweepN}語）</span></div>`;
   if(R.kind === 'wrong') return bar('間違えた語', R.wset.done.size, R.wset.ix.length);
-  if(R.kind === 'random'){ const n = rndAll().length, left = rndLeft().length;
-    return `<div class="sbar"><span>乱取り・${randName()}</span><div><i style="width:${n ? (n - left) / n * 100 : 0}%"></i></div><span>残り${left}語</span></div>`; }
+  if(R.kind === 'random'){ const n = rndN(), left = rndLeft().length, r = rndState().r;
+    return `<div class="sbar"><span>乱取り・${randName()}${r > 1 ? `・${kn(r)}周目` : ''}</span><div><i style="width:${n ? (n - left) / n * 100 : 0}%"></i></div><span>残り${left}語</span></div>`; }
   if(R.kind === 'redo') return bar(esc(R.gset.label) + '・もう一度', R.gset.done.size, R.gset.ix.length);
   return '<div class="sbar"><span>復習の稽古</span></div>';
 }
@@ -1354,8 +1368,10 @@ function afterAnswer(cur, ok){
     if(R.ck && left > 0 && ckWords().every(i => g.done.includes(i) || out(i))) return chunkDone();
   }
   if(R.mode === 'train' && R.kind === 'random' && !cur.revive){
-    S.rnd[S.only] = rndLeft().filter(i => i !== cur.i); save();
-    if(!rndLeft().length) return roundDone();
+    const st = rndState(); st.left = st.left.filter(i => i !== cur.i);
+    if(!ok && !st.miss.includes(cur.i)) st.miss.push(cur.i);
+    save();
+    if(!st.left.length) return roundDone();
   }
   if(R.mode === 'train' && R.kind === 'redo'){
     const gs = R.gset;
@@ -1711,7 +1727,7 @@ function manual(){
       <ul><li>きのうの確認・段・乱取り・間違えた語・復習・総ざらいには出ない</li><li><b>本番模試とめくり札には出る</b>（本番に出るかもしれないのは変わらない）</li>
       <li>あとまわしが残っている段は<b>達成にならない</b></li><li>ほかの語がぜんぶ「覚えた」になったら、戻すか聞く</li></ul>`)}
     ${sec(8, '乱取り・間違えた語', `
-      <p><b>乱取り</b>：選んでいる種類（ぜんぶ／書きだけ／読みだけ）の語をランダムに出す。<b>一周するまで、まだ出ていない語から出る</b>（次の回にも持ち越す）。トップと問題画面に「残り○語」。一周すると判子「一周達成」→並べ直してもう一周。ぜんぶ・書きだけ・読みだけで別々に数える。</p>
+      <p><b>乱取り</b>：選んでいる種類（ぜんぶ／書きだけ／読みだけ）の語をランダムに出す。<b>一周するまで、まだ出ていない語から出る</b>（次の回にも持ち越す）。トップと問題画面に「残り○語」。<b>一周したら、その周で間違えた語だけで次の周</b>（2周目・3周目…）。間違えが0の周で「乱取り完了」→ぜんぶの語で最初から。ぜんぶ・書きだけ・読みだけで別々に数える。</p>
       <p><b>間違えた語</b>：間違えた語だけを出す。<b>その日の最初の答えで正解すると外れる</b>（間違えてから正解しただけでは外れない。次の日の最初に正解すれば外れる）。</p>`)}
     ${sec(9, 'めくり札', `<p>採点しないで、めくって見るだけのカード。段ごとか、ぜんぶランダムで。カードを押すと答え、左右にスワイプか「次へ」でめくる。「いつも答えも出す」で両面を一度に見られる。電車の中や、友だちと出し合うときに。<b>記録には残らない</b>（「覚えた」にはならない）。</p>`)}
     ${sec(10, '本番模試', `
