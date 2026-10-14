@@ -593,6 +593,18 @@ function reading(item){
   if(item.t === 'y') return item.a.join('／');
   return item.q.replace(/［|］/g, '').replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
 }
+function mockQ(item){
+  const e = item.e;
+  if(!e) return item.q;
+  if(item.t === 'y'){ const w = word(item); return e.includes(w) ? e.replace(w, '［' + w + '］') : item.q; }
+  const w = item.w || item.a;
+  if(e.includes(w)) return e.replace(w, item.q);                        // 例：但し → ［タダ］し
+  const kana = (item.q.match(/［(.+?)］/) || [])[1];
+  if(kana && e.includes(item.a)) return e.replace(item.a, '［' + kana + '］');   // 例：据えた → ［ス］えた
+  return item.q;
+}
+/* 出題文：模試は文の中で、練習は語だけ */
+const qOf = item => R && R.mode === 'mock' ? mockQ(item) : item.q;
 function filled(item){   // 書きの答えを入れた文（カタカナ部分を漢字に置き換え）
   if(item.t !== 'k') return item.q.replace(/［|］/g,'');
   return item.q.replace(/［.+?］/, item.a);
@@ -940,7 +952,7 @@ function show(){
     app.innerHTML = `${header(cur)}
       <div class="card">
         <div class="ask">線の部分の読みを、ひらがなで</div>
-        <div class="q${solo(item.q)}">${sentence(item.q)}</div>
+        <div class="q${solo(qOf(item))}">${sentence(qOf(item))}</div>
         <form id="f" autocomplete="off">
           <input class="ans" id="in" inputmode="text" lang="ja" enterkeyhint="done" placeholder="ひらがなで入力">
           <button class="btn" type="submit">こたえる</button>
@@ -960,13 +972,13 @@ function show(){
     app.innerHTML = `${header(cur)}
       <div class="card">
         <div class="ask">線のカタカナを漢字に。<br>頭の中で（書ける場所なら指や紙に）書いてから、答えを見よう</div>
-        <div class="q${solo(item.q)}">${sentence(item.q)}</div>
+        <div class="q${solo(qOf(item))}">${sentence(qOf(item))}</div>
         ${item.m && !mock ? `<div class="mean"><b>意味</b><span>${esc(item.m)}</span></div>` : ''}
         <button class="btn" id="open">答えを見る</button>
       </div>`;
     document.getElementById('open').onclick = () => {
       app.querySelector('.card').innerHTML = `
-        <div class="q${solo(item.q)}">${sentence(item.q)}</div>
+        <div class="q${solo(qOf(item))}">${sentence(qOf(item))}</div>
         ${chars(item)}
         ${item.w ? '' : `<div class="full">${esc(filled(item))}</div>`}
         ${extra(item)}
@@ -988,7 +1000,7 @@ function answered(ok, typed){
   const item = QUESTIONS[R.queue[R.pos].i];
   const card = app.querySelector('.card');
   card.innerHTML = `
-    <div class="q${solo(item.q)}">${sentence(item.q)}</div>
+    <div class="q${solo(qOf(item))}">${sentence(qOf(item))}</div>
     <div class="judge ${ok ? 'ok' : 'ng'}">${ok ? '正解' : (typed ? `「${esc(typed)}」ではなく` : '答えは')}</div>
     ${ok ? `<div class="full">${item.a.map(esc).join(' ／ ')}</div>` : `<div class="answer" style="font-size:36px">${item.a.map(esc).join('<span class="muted"> ／ </span>')}</div>`}
     ${!ok && R.mode === 'train' ? '<div class="muted center">だいじょうぶ。この語は3問あとに「復活戦」でもう一度出る</div>' : ''}
@@ -1169,7 +1181,7 @@ function mockChoose(){
   stopTimer(); clearFx();
   app.innerHTML = `<h1>本番模試</h1>
     <div class="card">
-      <div>本番と同じ<b>20問（書き${TEST.mockKaki}・読み${TEST.mockYomi}）</b>を<b>10分</b>で。書きに意味は出ない。</div>
+      <div>本番と同じ<b>20問（書き${TEST.mockKaki}・読み${TEST.mockYomi}）</b>を<b>10分</b>で。本番と同じく<b>文の中</b>で出す（意味は出ない）。</div>
       ${S.mockLast !== null ? `<div class="muted" style="margin-top:6px">前回 ${S.mockLast}点・最高 ${S.mockBest}点</div>` : ''}
     </div>
     <button class="btn" id="paper">紙で解く<small>本番と同じ。ノートや裏紙に書いて、あとで答え合わせ</small></button>
@@ -1186,7 +1198,7 @@ function startMock(paper){
   if(paper){ R.onTimeUp = () => paperList(true); paperList(false); }
   else { R.onTimeUp = () => result(); startTimer(); show(); }
 }
-function prompt(item){ return item.t === 'k' ? esc(item.q.replace(/［|］/g, '')) : sentence(item.q); }
+function prompt(item){ return sentence(mockQ(item)); }
 /* 紙で解く：20問の一覧（書きはカタカナ・読みは線の語） */
 function paperList(timeUp){
   if(!timeUp) startTimer();
@@ -1194,7 +1206,7 @@ function paperList(timeUp){
       <button class="btn sub mini" id="quit">やめる</button></div>
     ${timeUp ? '<div class="goal" style="text-align:center;margin-top:10px">時間です。答え合わせへ</div>' : ''}
     <div class="card">
-      <div class="ask">ノートや裏紙に、番号と答えを書く。書きは漢字で、読みはひらがなで。</div>
+      <div class="ask">ノートや裏紙に、番号と答えを書く。線のカタカナは漢字で、線の漢字は読みをひらがなで。</div>
       <ol class="paper">${R.queue.map((e, k) => { const it = QUESTIONS[e.i];
         return `<li><span class="pn">${k + 1}</span><span class="pk">${it.t === 'k' ? '書' : '読'}</span><span class="pq">${prompt(it)}</span></li>`; }).join('')}</ol>
     </div>
@@ -1209,7 +1221,7 @@ function paperGrade(){
   const cur = R.queue[R.pos], item = QUESTIONS[cur.i];
   app.innerHTML = `<div class="top"><span class="timer">${R.pos + 1}<small style="font-size:14px"> / ${R.queue.length}</small></span><span class="kind">答え合わせ</span><button class="btn sub mini" id="quit">やめる</button></div>
     <div class="card">
-      <div class="q${item.t === 'k' ? ' solo' : solo(item.q)}">${prompt(item)}</div>
+      <div class="q">${prompt(item)}</div>
       ${item.t === 'k' ? chars(item) : `<div class="answer" style="font-size:36px">${item.a.map(esc).join('<span class="muted"> ／ </span>')}</div>`}
       ${extra(item)}
       <div class="crit">${item.t === 'k' ? CRIT : 'ひらがなが1字でも違ったら不正解'}（間違えた語は明日の確認に出る）</div>
@@ -1360,7 +1372,7 @@ function manual(){
       <p><b>間違えた語</b>：間違えた語だけを出す。<b>その日の最初の答えで正解すると外れる</b>（間違えてから正解しただけでは外れない。次の日の最初に正解すれば外れる）。</p>`)}
     ${sec(12, 'めくり札', `<p>採点しないで、めくって見るだけのカード。段ごとか、ぜんぶランダムで。カードを押すと答え、左右にスワイプか「次へ」でめくる。「いつも答えも出す」で両面を一度に見られる。電車の中や、友だちと出し合うときに。<b>記録には残らない</b>（「覚えた」にはならない）。</p>`)}
     ${sec(8, '本番模試', `
-      <p>本番と同じ20問（書き${TEST.mockKaki}・読み${TEST.mockYomi}）を10分で。書きに意味は出ない。</p>
+      <p>本番と同じ20問（書き${TEST.mockKaki}・読み${TEST.mockYomi}）を10分で。文の中の線の部分を答える（意味は出ない）。</p>
       <ul><li><b>紙で解く</b>：一覧を見てノートに書く → 答え合わせで1問ずつ正解／不正解</li>
       <li><b>スマホで解く</b>：1問ずつ答えて採点。0:00で終わり、解けなかった問題は0点</li></ul>
       <p>いちばんよかった点が「最高点」になる。間違えた語は次の日の確認に出る。</p>`)}
