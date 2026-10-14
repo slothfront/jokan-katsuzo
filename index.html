@@ -673,8 +673,8 @@ function show(){
         ${item.w ? '' : `<div class="full">${esc(filled(item))}</div>`}
         ${extra(item)}
         <div class="row" style="margin-top:12px">
-          <button class="btn ok" id="y">わかった</button>
-          <button class="btn ng" id="n">わからなかった</button>
+          <button class="btn ok" id="y">⭕ 正解</button>
+          <button class="btn ng" id="n">❌ 不正解</button>
         </div>`;
       document.getElementById('y').onclick = () => next(true);
       document.getElementById('n').onclick = () => next(false);
