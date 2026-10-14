@@ -3,108 +3,196 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1d4ed8">
+<meta name="theme-color" content="#1f1b16">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@700;900&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap" rel="stylesheet">
 <title>常漢勝つぞ</title>
 <style>
 :root{
-  --bg:#f5f6fa; --card:#ffffff; --ink:#1b1f2a; --sub:#5b6475; --line:#dde1ea;
-  --main:#1d4ed8; --main-ink:#ffffff; --ok:#15803d; --ok-bg:#dcfce7; --ng:#b91c1c; --ng-bg:#fee2e2;
-  --gold:#b45309; --gold-bg:#fef3c7; --track:#e5e7ef;
+  --paper:#f5efe2; --card:#fbf8f0; --ink:#1f1b16; --sub:#6b6256; --hair:#d8ccb4;
+  --shu:#c3362b; --shu-bg:#f5ddd6; --kin:#86631c; --kin-bg:#f1e6c8; --ai:#2b4c7e;
+  --on-ink:#f5efe2; --on-shu:#ffffff; --track:#d8ccb4; --dot:rgba(120,90,40,.07);
 }
 @media (prefers-color-scheme: dark){
-  :root{
-    --bg:#0f1218; --card:#1a1f2a; --ink:#eef1f7; --sub:#a3acbd; --line:#2c3341;
-    --main:#5b8cff; --main-ink:#0b1020; --ok:#4ade80; --ok-bg:#12331f; --ng:#f87171; --ng-bg:#3a1616;
-    --gold:#fbbf24; --gold-bg:#3a2a0b; --track:#2a303d;
+  :root:not([data-theme="light"]){
+    --paper:#15130f; --card:#1d1a15; --ink:#efe6d4; --sub:#aa9f8c; --hair:#3b342a;
+    --shu:#e35a4b; --shu-bg:#3b1c17; --kin:#d6ac52; --kin-bg:#3a2f15; --ai:#7fa3dc;
+    --on-ink:#15130f; --on-shu:#15130f; --track:#756a57; --dot:rgba(255,240,210,.035);
   }
 }
+:root[data-theme="dark"]{
+  --paper:#15130f; --card:#1d1a15; --ink:#efe6d4; --sub:#aa9f8c; --hair:#3b342a;
+  --shu:#e35a4b; --shu-bg:#3b1c17; --kin:#d6ac52; --kin-bg:#3a2f15; --ai:#7fa3dc;
+  --on-ink:#15130f; --on-shu:#15130f; --track:#756a57; --dot:rgba(255,240,210,.035);
+}
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--ink);
-  font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP","Yu Gothic UI",sans-serif;
+html,body{margin:0;background-color:var(--paper);color:var(--ink);
+  background-image:radial-gradient(var(--dot) 1px,transparent 1.2px);background-size:6px 6px;
+  font-family:"Zen Kaku Gothic New",system-ui,-apple-system,"Hiragino Sans","Noto Sans JP","Yu Gothic UI",sans-serif;
   -webkit-text-size-adjust:100%}
 body{min-height:100dvh}
-.wrap{max-width:520px;margin:0 auto;padding:16px 16px calc(24px + env(safe-area-inset-bottom))}
-h1{font-size:22px;margin:4px 0 2px}
+.serif,h1,.big,.q,.answer,.timer,.logo,.btn,.kn{font-family:"Noto Serif JP","Hiragino Mincho ProN","Yu Mincho",serif}
+.wrap{max-width:520px;margin:0 auto;padding:18px 16px calc(28px + env(safe-area-inset-bottom))}
+h1{font-size:23px;font-weight:900;letter-spacing:.06em;margin:6px 0 4px}
 .muted{color:var(--sub);font-size:14px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:12px 0}
-.btn{display:block;width:100%;border:0;border-radius:14px;padding:16px;font-size:18px;font-weight:700;
-  background:var(--main);color:var(--main-ink);margin:10px 0;cursor:pointer;font-family:inherit}
-.btn.sub{background:var(--card);color:var(--ink);border:1px solid var(--line)}
-.btn.ok{background:var(--ok);color:#fff}
-.btn.ng{background:var(--ng);color:#fff}
-.btn:active{transform:scale(.98)}
-.row{display:flex;gap:10px}
-.row>.btn{flex:1;font-size:16px;padding:16px 6px;white-space:nowrap}
-.banner{background:var(--gold-bg);color:var(--gold);border-radius:12px;padding:10px 12px;font-size:14px;margin-top:10px}
-/* 予想点メーター */
-.meter{position:relative;height:22px;background:var(--track);border-radius:11px;margin:30px 0 8px}
-.meter .fill{position:absolute;left:0;top:0;bottom:0;background:var(--main);border-radius:11px;transition:width .6s}
-.meter .pass{position:absolute;top:-24px;bottom:-4px;border-left:3px dashed var(--ng)}
-.meter .pass span{position:absolute;top:0;left:4px;font-size:12px;color:var(--ng);white-space:nowrap;font-weight:700}
-.big{font-size:40px;font-weight:800;line-height:1.1}
-.meter.thin{height:12px;margin:10px 0 4px}
-.ach{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px}
-.meter .fill.ok{background:var(--ok)}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
-.stats b{display:block;font-size:22px}
-.stats span{font-size:12px;color:var(--sub)}
+b{font-weight:700}
+.card{background:var(--card);border:1.5px solid var(--ink);border-radius:2px;padding:16px;margin:14px 0}
+.btn{display:block;width:100%;border:1.5px solid var(--ink);border-radius:2px;padding:15px 12px;font-size:19px;font-weight:900;letter-spacing:.12em;
+  background:var(--ink);color:var(--on-ink);margin:10px 0;cursor:pointer;line-height:1.35}
+.btn small{display:block;font-family:"Zen Kaku Gothic New",sans-serif;font-weight:500;font-size:12px;letter-spacing:.04em;opacity:.75;margin-top:2px}
+.btn.sub{background:transparent;color:var(--ink);font-size:16px;letter-spacing:.08em}
+.btn.ok{background:var(--shu);border-color:var(--shu);color:var(--on-shu)}
+.btn.ng{background:transparent;color:var(--ink)}
+.btn:active{transform:translateY(1px)}
+.btn.mini{width:auto;flex:none;margin:0;min-height:44px;padding:10px 14px;font-size:14px;letter-spacing:.06em}
+#quit{min-width:72px}
+.row{display:flex;gap:10px;margin:10px 0}
+.row>.btn{flex:1;font-size:16px;padding:14px 6px;white-space:nowrap;margin:0}
+.banner{border:1.5px solid var(--kin);color:var(--kin);padding:10px 12px;font-size:14px;margin-top:10px}
+/* 見出し */
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;border-bottom:2px solid var(--ink);padding-bottom:8px}
+.logo{font-weight:900;font-size:31px;letter-spacing:.08em;line-height:1;margin:0}
+.dday{font-family:"Noto Serif JP",serif;font-size:13px;white-space:nowrap;text-align:right}
+.dday b{font-size:24px;color:var(--shu);font-weight:900;margin:0 2px}
+.subhead{color:var(--sub);font-size:13px;margin-top:6px}
+/* 数字の箱 */
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.kpi{border:1.5px solid var(--ink);background:var(--card);padding:10px 12px;position:relative}
+.kpi.wide{grid-column:1 / -1}
+.cap{font-size:12px;letter-spacing:.1em;color:var(--sub)}
+.big{font-size:42px;font-weight:900;line-height:1.08}
+.big small{font-size:16px;font-weight:700;margin-left:2px}
+.line{height:6px;background:var(--track);margin:8px 0 4px;position:relative}
+.line i{position:absolute;left:0;top:0;bottom:0;background:var(--ink);transition:width .6s}
+.line i.lo{background:color-mix(in srgb,var(--ink) 35%,var(--track))}
+.line .goal-mark{position:absolute;top:-7px;bottom:-7px;border-left:2px solid var(--shu)}
+.line .goal-mark span{position:absolute;bottom:100%;left:4px;font-size:12px;color:var(--shu);white-space:nowrap;font-weight:700;margin-bottom:1px}
+.line .goal-mark.r span{left:auto;right:4px}
+.kpi .foot{font-size:12px;color:var(--sub)}
+.kpi.wide .line{margin-top:22px}
+.kpi.wide .msg{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:14px}
+.kpi.wide .msg>div{flex:1}
+/* 判子 */
+.stamp{display:inline-flex;align-items:center;justify-content:center;text-align:center;border:3px solid var(--shu);color:var(--shu);border-radius:50%;
+  font-family:"Noto Serif JP",serif;font-weight:900;line-height:1.1;transform:rotate(-12deg);background:color-mix(in srgb,var(--card) 70%,transparent)}
+.kpi .stamp{position:absolute;right:10px;top:8px;width:58px;height:58px;font-size:13px}
+.stamp.big-stamp{width:120px;height:120px;font-size:26px;border-width:5px;margin:6px auto 4px;display:flex;animation:press .5s cubic-bezier(.2,1.6,.4,1)}
+@keyframes press{0%{transform:scale(1.8) rotate(-12deg);opacity:0}100%{transform:scale(1) rotate(-12deg);opacity:1}}
+/* 区切り見出し */
+.sec{margin:20px 0 8px;font-size:12px;letter-spacing:.25em;display:flex;align-items:center;gap:8px;color:var(--ink)}
+.sec:after{content:"";flex:1;border-top:1px solid var(--ink)}
+/* 種類・時間 */
+.seg{display:grid;grid-template-columns:repeat(3,1fr);border:1.5px solid var(--ink)}
+.seg button{border:0;border-left:1.5px solid var(--ink);background:transparent;color:var(--ink);font:inherit;font-weight:700;font-size:15px;padding:11px 4px;cursor:pointer}
+.seg button:first-child{border-left:0}
+.seg button.on{background:var(--ink);color:var(--on-ink)}
+.stepper{display:flex;align-items:center;justify-content:center;gap:14px;margin:14px 0 0}
+.stepper button{width:46px;height:46px;border:1.5px solid var(--ink);border-radius:2px;background:transparent;color:var(--ink);font-size:22px;font-weight:700;cursor:pointer;font-family:inherit}
+.stepper b{font-family:"Noto Serif JP",serif;font-size:26px;font-weight:900;min-width:72px;text-align:center}
+/* 札（ステージ） */
+.fuda{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.fuda button{position:relative;border:1.5px solid var(--ink);background:var(--card);color:var(--ink);height:104px;padding:6px 0 4px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;cursor:pointer;font:inherit}
+.fuda .v{writing-mode:vertical-rl;text-orientation:upright;font-family:"Noto Serif JP",serif;font-weight:900;font-size:14px;letter-spacing:.06em;white-space:nowrap}
+.fuda small{font-size:12px;color:var(--sub);white-space:nowrap}
+.fuda button.clr{background:var(--ink);color:var(--on-ink)}
+.fuda button.clr small{color:var(--on-ink);opacity:.8}
+.fuda button.now{border:2.5px solid var(--shu);color:var(--shu)}
+.fuda button.now small{color:var(--shu)}
+.fuda .seal{position:absolute;right:3px;top:-9px;width:24px;height:24px;border-radius:50%;background:var(--shu);color:var(--on-shu);font-size:12px;font-weight:900;display:flex;align-items:center;justify-content:center;font-family:"Noto Serif JP",serif;transform:rotate(-10deg)}
+.note{color:var(--sub);font-size:13px;text-align:center;margin-top:8px}
+/* 成績の小箱 */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);text-align:center;padding:10px 0}
+.stats>div+div{border-left:1px solid var(--hair)}
+.stats b{display:block;font-family:"Noto Serif JP",serif;font-size:22px;font-weight:900}
+.stats span{font-size:12px;color:var(--sub);letter-spacing:.08em}
 /* 問題 */
-.top{display:flex;justify-content:space-between;align-items:center;font-size:15px;color:var(--sub)}
-.timer{font-variant-numeric:tabular-nums;font-weight:800;font-size:20px;color:var(--ink)}
-.timer.low{color:var(--ng)}
-.kind{display:inline-block;font-size:13px;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--track)}
-.revive{background:var(--gold-bg);color:var(--gold)}
-.q{font-size:24px;line-height:1.9;margin:14px 0 6px;word-break:break-all}
-.q.solo{font-size:34px;text-align:center;margin:20px 0 14px}
-.q u{text-decoration:none;border-bottom:3px solid var(--main);padding:0 2px;font-weight:800}
-.ask{font-size:14px;color:var(--sub)}
-input.ans{width:100%;font-size:24px;padding:14px;border-radius:12px;border:2px solid var(--line);
-  background:var(--bg);color:var(--ink);font-family:inherit}
-input.ans:focus{outline:none;border-color:var(--main)}
-.answer{font-size:56px;font-weight:800;text-align:center;margin:8px 0;letter-spacing:.05em}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.timer{font-variant-numeric:tabular-nums;font-weight:900;font-size:24px;min-width:64px}
+.timer.low{color:var(--shu)}
+.kind{display:inline-block;font-family:"Noto Serif JP",serif;font-size:13px;font-weight:900;padding:4px 12px;border:0;background:var(--ink);color:var(--on-ink);letter-spacing:.2em}
+.kind.revive{background:var(--shu);color:var(--on-shu)}
+.q{font-size:26px;font-weight:700;line-height:1.9;margin:14px 0 8px;word-break:break-all}
+.q.solo{font-size:40px;font-weight:900;text-align:center;margin:22px 0 16px;letter-spacing:.08em}
+.q u{text-decoration:none;border-bottom:3px solid var(--shu);padding:0 2px}
+.ask{font-size:13px;color:var(--sub);letter-spacing:.04em}
+input.ans{width:100%;font-family:"Noto Serif JP",serif;font-size:26px;padding:10px 4px;border:0;border-bottom:2px solid var(--ink);border-radius:0;
+  background:transparent;color:var(--ink)}
+input.ans:focus{outline:none;border-bottom-color:var(--shu)}
+input.ans::placeholder{color:var(--sub);font-size:18px}
+.answer{font-size:60px;font-weight:900;text-align:center;margin:6px 0;letter-spacing:.06em}
 .full{text-align:center;color:var(--sub);font-size:16px}
-.judge{border-radius:12px;padding:12px;margin:12px 0;font-weight:700;font-size:18px;text-align:center}
-.judge.ok{background:var(--ok-bg);color:var(--ok)}
-.judge.ng{background:var(--ng-bg);color:var(--ng)}
-.combo{height:28px;text-align:center;font-weight:800;color:var(--gold);font-size:20px}
+.judge{padding:10px;margin:12px 0;font-weight:900;font-size:20px;text-align:center;font-family:"Noto Serif JP",serif;letter-spacing:.08em}
+.judge.ok{color:var(--shu)}
+.judge.ok:before{content:"";display:inline-block;width:28px;height:28px;border:4px solid var(--shu);border-radius:50%;vertical-align:-6px;margin-right:10px}
+.judge.ng{color:var(--ink);border-top:1px solid var(--hair);border-bottom:1px solid var(--hair)}
+.judge.ng:before{content:"×";font-size:28px;margin-right:8px;vertical-align:-3px;-webkit-text-stroke:2px currentColor}
+.combo{height:22px;line-height:22px;margin-top:4px;text-align:center;font-family:"Noto Serif JP",serif;font-weight:900;color:var(--shu);font-size:20px;letter-spacing:.1em}
 .pop{animation:pop .5s}
-@keyframes pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.25);opacity:1}100%{transform:scale(1)}}
+@keyframes pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.2);opacity:1}100%{transform:scale(1)}}
+.sbar{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--sub);font-weight:700;margin-top:10px}
+.sbar span:first-child{font-family:"Noto Serif JP",serif;font-weight:900;color:var(--ink)}
+.sbar div{flex:1;height:6px;background:var(--track);overflow:hidden}
+.sbar i{display:block;height:100%;background:var(--ink);transition:width .3s}
+.mean{border-left:3px solid var(--ink);padding:6px 12px;margin:0 0 8px;font-size:16px;line-height:1.6}
+.ex>div,.mean{display:flex;align-items:baseline;gap:8px}
+.mean b,.ex b{flex:none;font-size:12px;color:var(--sub);border:1px solid var(--sub);padding:0 6px;letter-spacing:.1em}
+.ex>div>span,.mean>span{flex:1;min-width:0}
+.ex{border-top:1px solid var(--hair);padding:10px 2px 2px;margin:12px 0 4px;font-size:16px;line-height:1.7;text-align:left}
+.ex div+div{margin-top:6px}
+.ex mark{background:transparent;color:var(--shu);font-weight:900}
 /* 結果 */
 .center{text-align:center}
-.goal{font-size:28px;font-weight:800;color:var(--ok)}
-/* ずかん */
+.goal{font-family:"Noto Serif JP",serif;font-size:22px;font-weight:900;color:var(--shu);letter-spacing:.06em}
+.plus{color:var(--shu);font-weight:700}
+/* 図鑑 */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:6px}
-.tile{border-radius:10px;padding:8px 2px;text-align:center;font-weight:700;font-size:15px;border:1px solid var(--line);background:var(--card)}
-.tile small{display:block;font-size:10px;font-weight:400;color:var(--sub)}
-.tile.s2{background:var(--ok-bg);color:var(--ok);border-color:transparent}
-.tile.s1{background:var(--gold-bg);color:var(--gold);border-color:transparent}
-.tile.s0{background:var(--ng-bg);color:var(--ng);border-color:transparent}
-.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--sub);margin:8px 0}
-.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
-.confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden}
-.confetti i{position:absolute;top:-20px;width:10px;height:14px;border-radius:2px;animation:fall linear forwards}
-@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+.tile{padding:8px 2px;text-align:center;font-family:"Noto Serif JP",serif;font-weight:900;font-size:15px;border:1px solid var(--hair);background:var(--card)}
+.tile small{display:block;font-family:"Zen Kaku Gothic New",sans-serif;font-size:12px;font-weight:500;color:var(--sub)}
+.tile.s2{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+.tile.s2 small{color:var(--on-ink);opacity:.75}
+.tile.s1{border:1.5px solid var(--kin);color:var(--kin)}
+.tile.s0{background:var(--shu-bg);border-color:var(--shu);color:var(--shu)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--sub);margin:0;position:sticky;top:0;z-index:2;background:var(--paper);padding:8px 0}
+.legend i{display:inline-block;width:11px;height:11px;margin-right:4px;vertical-align:-1px;border:1px solid var(--hair)}
+/* 紙吹雪（和紙の色） */
+.confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+.wrap{position:relative;z-index:1}
+@media (prefers-reduced-motion:reduce){.confetti{display:none}.stamp.big-stamp{animation:none}}
+.confetti i{position:absolute;top:-20px;width:9px;height:14px;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
 .hidden{display:none}
-.mean{background:var(--bg);border-radius:10px;padding:10px 12px;margin:0 0 6px;font-size:16px;line-height:1.6}
-.mean b,.ex b{display:inline-block;font-size:12px;color:var(--sub);margin-right:8px;border:1px solid var(--line);border-radius:6px;padding:0 6px;vertical-align:1px}
-.ex{background:var(--bg);border-radius:10px;padding:10px 12px;margin:10px 0 4px;font-size:16px;line-height:1.7;text-align:left}
-.ex div+div{margin-top:6px}
-.ex mark{background:transparent;color:var(--main);font-weight:800;border-bottom:2px solid var(--main)}
-.map{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:4px 0 8px}
-.map button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:8px 2px;font:inherit;font-weight:700;font-size:14px;cursor:pointer}
-.map button small{display:block;font-size:11px;font-weight:400;color:var(--sub);margin-top:2px}
-.map button.clr{background:var(--ok-bg);color:var(--ok);border-color:transparent}
-.map button.clr small{color:var(--ok)}
-.map button.now{border:2px solid var(--main)}
-.sbar{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--sub);font-weight:700;margin-top:8px}
-.sbar div{flex:1;height:8px;background:var(--track);border-radius:4px;overflow:hidden}
-.sbar i{display:block;height:100%;background:var(--ok);transition:width .3s}
-.stepper{display:flex;align-items:center;justify-content:center;gap:14px;margin:14px 0 0}
-.stepper button{width:48px;height:48px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:24px;font-weight:700;cursor:pointer;font-family:inherit}
-.stepper b{font-size:24px;min-width:64px;text-align:center}
-.seg{display:flex;background:var(--track);border-radius:12px;padding:4px;gap:4px;margin-top:12px}
-.seg button{flex:1;border:0;background:transparent;color:var(--sub);font:inherit;font-weight:700;font-size:15px;padding:10px 4px;border-radius:9px;cursor:pointer}
-.seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+
+/* 書きの答え：1字ずつの枠と拡大 */
+.chars{display:flex;justify-content:center;align-items:flex-end;gap:6px;margin:6px 0 4px;flex-wrap:wrap}
+.chars .ch{width:76px;height:76px;border:1.5px solid var(--ink);background:var(--card);color:var(--ink);font-family:"Noto Serif JP",serif;font-weight:900;font-size:52px;line-height:1;cursor:zoom-in;padding:0;
+  background-image:linear-gradient(var(--hair),var(--hair)),linear-gradient(var(--hair),var(--hair));background-size:100% 1px,1px 100%;background-position:center;background-repeat:no-repeat}
+.chars .kana{font-family:"Noto Serif JP",serif;font-weight:900;font-size:40px;padding-bottom:6px}
+.zoom{position:fixed;inset:0;z-index:20;background:color-mix(in srgb,var(--paper) 94%,transparent);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+.zoom span{font-family:"Noto Serif JP",serif;font-weight:900;font-size:min(72vw,300px);line-height:1;color:var(--ink);border:2px solid var(--ink);padding:10px;
+  background-image:linear-gradient(var(--hair),var(--hair)),linear-gradient(var(--hair),var(--hair));background-size:100% 1px,1px 100%;background-position:center;background-repeat:no-repeat}
+.zoom small{color:var(--sub)}
+.self{text-align:center;font-weight:700;margin-top:14px}
+.crit{font-size:13px;color:var(--sub);text-align:center;margin:4px 0 2px;line-height:1.6}
+.btn.ok:before{content:"";display:inline-block;width:.75em;height:.75em;border:3px solid currentColor;border-radius:50%;margin-right:.4em;vertical-align:-.05em}
+.sym{-webkit-text-stroke:1.5px currentColor;margin-right:.35em}
+/* 結果の達成度 */
+.delta{display:grid;grid-template-columns:auto auto;justify-content:center;gap:2px 16px;text-align:left;margin-top:12px;padding-top:10px;border-top:1px solid var(--hair);font-variant-numeric:tabular-nums}
+/* やった日 */
+.kpi.days{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.kpi.days .big{font-size:34px}
+.marks{display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-end;max-width:60%}
+.dm{width:26px;height:26px;border:1.5px solid var(--ink);display:inline-flex;align-items:center;justify-content:center;font-style:normal;font-weight:900;font-size:15px;color:var(--ink)}
+.dm.on{color:var(--ink)}
+.dm.full{background:var(--ink);color:var(--on-ink)}
+/* 紙で解く */
+.paper{margin:10px 0 0;padding:0;list-style:none}
+.pn{flex:none;min-width:1.8em;text-align:right;font-family:"Noto Serif JP",serif;font-weight:900;font-size:18px}
+.paper li{padding:8px 0;border-bottom:1px solid var(--hair);display:flex;align-items:baseline;gap:10px}
+.pk{flex:none;font-size:12px;border:1px solid var(--sub);color:var(--sub);padding:0 5px}
+.pq{font-family:"Noto Serif JP",serif;font-weight:700;font-size:20px}
+.pq u{text-decoration:none;border-bottom:2px solid var(--shu)}
+.top h1{margin:0}
 </style>
 </head>
 <body>
@@ -356,7 +444,17 @@ const EXTEND_MIN = [1, 3, 5];   // 時間切れのときに選べる延長
 const REVIVE_GAP = 3;        // 間違えた問題は3問あとに「復活戦」で出す
 const SKIP_AFTER = 5;        // 同じ語を今日この回数つづけて間違えたら「次は行ける／今日はスキップ」を選ばせる
 const STAGE_SIZE = 20;       // 1ステージの語数の目安（範囲を等分する）
+const CHECK_MAX = 10;        // 「きのうの確認」の最大語数（設定時間の1/3・1語15秒の見積もりと小さいほう。最低2語）
+const MOCK_SEC = 600;        // 本番模試の時間（本番と同じ10分）
+const CRIT = '1字ずつ見て、とめ・はね・送りがなまで同じなら正解。1画でも迷ったら不正解';
 
+/* 漢数字（0〜99）：ステージ名・本番までの日数に使う */
+function kn(n){
+  const d = '〇一二三四五六七八九';
+  if(n < 10) return d[n];
+  const t = Math.floor(n / 10), o = n % 10;
+  return (t > 1 ? d[t] : '') + '十' + (o ? d[o] : '');
+}
 /* ステージ：書き・読みをそれぞれ用紙の順に約20語ずつ区切る。
    「ぜんぶ」のときは書き2つ→読み1つの割合で並べる（本番の15：5に近い） */
 function makeStages(){
@@ -365,7 +463,7 @@ function makeStages(){
     const n = Math.max(1, Math.ceil(ix.length / STAGE_SIZE)), out = [];
     for(let k = 0; k < n; k++){
       const a = Math.round(ix.length * k / n), b = Math.round(ix.length * (k + 1) / n);
-      out.push({id: t + (k + 1), t, name: name + (k + 1), ix: ix.slice(a, b), at: (k + 1) / n});
+      out.push({id: t + (k + 1), t, name: name + kn(k + 1), label: name + '・' + kn(k + 1) + 'の段', ix: ix.slice(a, b), at: (k + 1) / n});
     }
     return out;
   };
@@ -374,32 +472,49 @@ function makeStages(){
 const STAGES = makeStages();
 const KEY = 'jokan:' + TEST.id;
 
+/* ---------- 日付 ---------- */
+function dayStr(d){ return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function today(){ return dayStr(new Date()); }
+function addDays(s, n){ const d = new Date(s + 'T00:00:00'); d.setDate(d.getDate() + n); return dayStr(d); }
+function daysLeft(){
+  const t = new Date(TEST.date + 'T00:00:00'); const n = new Date(); n.setHours(0, 0, 0, 0);
+  return Math.round((t - n) / 86400000);
+}
+/* 本番の前日と当日は、▶が「総ざらい」になる */
+function sweepDay(){ const d = daysLeft(); return d === 0 || d === 1; }
+
 /* ---------- 記録（このスマホの中だけ） ---------- */
 function load(){
   try{ const s = JSON.parse(localStorage.getItem(KEY)); if(s && s.items) return s; }catch(e){}
-  return {items:{}, days:[], mockBest:null, sessions:0};
+  return {items:{}, days:[], mockBest:null};
 }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
 let S = load();
 if(!['all','k','y'].includes(S.only)) S.only = 'all';   // トレーニングで出す種類（ぜんぶ／書きだけ／読みだけ）
 if(!(S.min >= 1 && S.min <= 30)) S.min = 10;            // トレーニングの時間（分・1〜30）
 if(!S.stages) S.stages = {};                              // ステージの進み具合 {id: {done:[問題番号], miss, cleared, perfect}}
+if(!S.skip) S.skip = {};                                  // 明日覚える字 {問題番号: スキップした日}
+if(!S.days) S.days = [];                                  // 練習した日
+if(!S.checkDays) S.checkDays = [];                        // 「きのうの確認」までやり終えた日
+if(S.mockLast === undefined) S.mockLast = null;           // 前回の模試の点
 const sg = id => S.stages[id] || (S.stages[id] = {done:[], miss:0, cleared:false, perfect:false});
 const stageById = id => STAGES.find(x => x.id === id);
 const myStages = () => STAGES.filter(x => S.only === 'all' || x.t === S.only);
 /* 目標：生徒が自分で決める（合格点〜満点・5点きざみ）。未設定なら最初に聞く */
 const clampGoal = g => Math.min(TEST.full, Math.max(TEST.pass, Math.round(g / TEST.goalStep) * TEST.goalStep));
 const goal = () => clampGoal(S.goal || TEST.pass);
-if(!S.skip) S.skip = {};                                  // 明日覚える字 {問題番号: スキップした日}
+/* やる日数の目標：本番までに何日やるか（1日1分でもよい） */
+const maxDays = () => Math.max(1, doneDays().filter(d => d < today()).length + daysLeft());
+const defaultDayGoal = () => Math.max(1, daysLeft() - 1);
 const skippedToday = i => S.skip[i] === today();          // 今日はもう出さない
 const revenge = i => !!S.skip[i] && S.skip[i] < today();  // 前の日にスキップした字＝リベンジ（最初に出す）
 const revengeFirst = ix => [...ix.filter(revenge), ...ix.filter(i => !revenge(i))];
 /* ステージに今日出せる語が残っているか */
 const stageOpen = x => x.ix.some(i => !sg(x.id).done.includes(i) && !skippedToday(i));
 function nextStage(){ return myStages().find(x => !sg(x.id).cleared && stageOpen(x)) || null; }
-const st = i => S.items[i] || (S.items[i] = {seen:0, ok:0, streak:0, last:null});
+const st = i => S.items[i] || (S.items[i] = {seen:0, ok:0, streak:0});
 
-/* 覚えた＝2回続けて正解／あと少し＝直近が正解／苦手＝直近が不正解 */
+/* 覚えた＝別の日に2回つづけて正解／あと少し＝正解は1日分だけ／苦手＝直近が不正解 */
 function level(i){
   const s = S.items[i];
   if(!s || !s.seen) return -1;
@@ -407,37 +522,29 @@ function level(i){
   if(s.streak === 1) return 1;
   return 0;
 }
-/* 達成度：範囲の語のうち、1回でも正解したことのある語の割合（％）。下がらない数字にしてある */
-/* 書き・読みそれぞれで出す（t='k'／'y'） */
+/* 達成度：範囲の語のうち、1回でも正解したことのある語の割合（％）。書き・読み別。下がらない */
 function ofType(t){ return QUESTIONS.map((q, i) => q.t === t ? i : -1).filter(i => i >= 0); }
 function achieved(t){ return ofType(t).filter(i => S.items[i] && S.items[i].ok > 0).length; }
 function achievedPct(t){ const n = ofType(t).length; return n ? Math.floor(achieved(t) / n * 100) : 0; }
 function achievedBoth(){ return {k: achievedPct('k'), y: achievedPct('y')}; }
-function mastered(){ return QUESTIONS.filter((_, i) => level(i) === 2).length; }
+/* 覚えた（一度でも別の日に2回つづけて正解した語）：表示用。一度届いたら下がらない */
+function mastered(t){ return (t ? ofType(t) : QUESTIONS.map((_, i) => i)).filter(i => S.items[i] && S.items[i].everM).length; }
+function masteredPct(t){ const n = ofType(t).length; return n ? Math.floor(mastered(t) / n * 100) : 0; }
 function almost(){ return QUESTIONS.filter((_, i) => level(i) === 1).length; }
-function today(){ const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-function streakDays(){
-  const set = new Set(S.days); let n = 0; const d = new Date();
-  if(!set.has(today())) d.setDate(d.getDate()-1);   // 今日まだなら昨日から数える
-  while(true){
-    const k = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-    if(!set.has(k)) break; n++; d.setDate(d.getDate()-1);
-  }
-  return n;
-}
-function daysLeft(){
-  const t = new Date(TEST.date + 'T00:00:00'); const n = new Date(); n.setHours(0,0,0,0);
-  return Math.round((t - n) / 86400000);
-}
+/* やった日（本番の日までに練習した日の数）。途切れても0に戻らない */
+function doneDays(){ return [...new Set(S.days)].filter(d => d <= TEST.date).sort(); }
+
 function record(i, ok){
-  const s = st(i); s.seen++; s.last = Date.now();
-  // 「覚えた」は別の回で2回続けて正解したとき。同じ回の中で何度正解しても連続は1つしか進めない
-  if(ok){ s.ok++; if(!(R && R.counted.has(i))) s.streak++; } else { s.streak = 0; }
-  if(s.wrDay !== today()){ s.wr = 0; s.wrDay = today(); }   // 今日の連続まちがい
+  const s = st(i), t = today();
+  s.seen++; s.last = Date.now();
+  // 「覚えた」は別の日に2回つづけて正解したとき。同じ日に何度正解しても1日分しか進めない
+  if(ok){ s.ok++; if(s.sDay !== t){ s.streak++; s.sDay = t; } if(s.streak >= 2) s.everM = true; }
+  else { s.streak = 0; s.sDay = null; }
+  if(s.wrDay !== t){ s.wr = 0; s.wrDay = t; }   // 今日の連続まちがい
   s.wr = ok ? 0 : (s.wr || 0) + 1;
-  if(ok && revenge(i)) delete S.skip[i];                     // リベンジ成功
-  if(R) R.counted.add(i);
-  if(!S.days.includes(today())) S.days.push(today());
+  if(ok && revenge(i)) delete S.skip[i];        // リベンジ成功
+  s.lastDay = t;
+  if(!S.days.includes(t)) S.days.push(t);
   save();
 }
 
@@ -450,52 +557,157 @@ function norm(x){
 function esc(x){ return String(x).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function sentence(q){ return esc(q).replace(/［(.+?)］/g, '<u>$1</u>'); }
 function solo(q){ return /^［[^］]+］[ぁ-ゖ]*$/.test(q) ? ' solo' : ''; }
+function word(item){ return item.t === 'y' ? item.q.replace(/［|］/g, '') : (item.w || item.a); }
 function filled(item){   // 書きの答えを入れた文（カタカナ部分を漢字に置き換え）
   if(item.t !== 'k') return item.q.replace(/［|］/g,'');
   return item.q.replace(/［.+?］/, item.a);
 }
 function extra(item){
   if(!item.m && !item.e) return '';
-  const word = item.t === 'y' ? item.q.replace(/［|］/g, '') : (item.w || item.a);
   let ex = item.e ? esc(item.e) : '';
-  for(const k of [word, item.a].filter(x => typeof x === 'string')){
+  for(const k of [word(item), item.a].filter(x => typeof x === 'string')){
     if(item.e && item.e.includes(k)){ ex = esc(item.e).replace(esc(k), '<mark>' + esc(k) + '</mark>'); break; }
   }
-  return `<div class="ex">${item.m ? `<div><b>意味</b>${esc(item.m)}</div>` : ''}${ex ? `<div><b>例文</b>${ex}</div>` : ''}</div>`;
+  return `<div class="ex">${item.m ? `<div><b>意味</b><span>${esc(item.m)}</span></div>` : ''}${ex ? `<div><b>例文</b><span>${ex}</span></div>` : ''}</div>`;
+}
+/* 書きの答え：漢字を1字ずつ枠に分けて大きく（押すとその字だけ拡大）。送りがなは枠の外 */
+function chars(item){
+  const w = item.w || item.a;
+  return `<div class="chars">${[...w].map(c => /[ぁ-ゖ]/.test(c)
+    ? `<span class="kana">${esc(c)}</span>` : `<button class="ch" type="button" aria-label="${esc(c)}を大きく">${esc(c)}</button>`).join('')}</div>`;
+}
+function bindZoom(){
+  document.querySelectorAll('.ch').forEach(b => b.onclick = () => {
+    const z = document.createElement('div'); z.className = 'zoom'; z.innerHTML = `<span>${esc(b.textContent)}</span><small>タップでもどる</small>`;
+    z.onclick = () => z.remove(); document.body.appendChild(z);
+  });
 }
 function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 
+/* ---------- 出題の並び ---------- */
+function myIdx(){ return QUESTIONS.map((q, i) => (S.only === 'all' || q.t === S.only) ? i : -1).filter(i => i >= 0); }
+const byOld = (a, b) => String((S.items[a] || {}).lastDay || '').localeCompare(String((S.items[b] || {}).lastDay || ''));
+/* きのうの確認：前の日までに出た語で、まだ「覚えた」でないもの。リベンジ→前に間違えた語→あと少し（古い順） */
+function checkPool(){
+  const t = today();
+  const pool = myIdx().filter(i => { const s = S.items[i]; return s && s.seen && s.lastDay && s.lastDay < t && level(i) < 2 && !skippedToday(i); });
+  const g0 = pool.filter(i => level(i) === 0).sort(byOld), g1 = pool.filter(i => level(i) === 1).sort(byOld);
+  return revengeFirst([...g0, ...g1]);
+}
+function checkLimit(){ return Math.max(2, Math.min(CHECK_MAX, Math.round(S.min * 60 / 3 / 15))); }
+/* 総ざらい：これまでに正解したことのある語ぜんぶ（覚えた語も）。苦手→古い順 */
+function sweepPool(){
+  const pool = myIdx().filter(i => S.items[i] && S.items[i].ok > 0 && !skippedToday(i));
+  return revengeFirst([...pool.filter(i => level(i) < 2).sort(byOld), ...pool.filter(i => level(i) === 2).sort(byOld)]);
+}
+/* 復習の稽古：苦手 → まだ出ていない → あと少し → 覚えた（それぞれの中はシャッフル） */
+function trainQueue(){
+  const g = {0:[], '-1':[], 1:[], 2:[]};
+  myIdx().forEach(i => { if(!skippedToday(i)) g[level(i)].push(i); });
+  return revengeFirst([...shuffle(g[0]), ...shuffle(g[-1]), ...shuffle(g[1]), ...shuffle(g[2])]);
+}
+/* ステージ：まだ正解していない語をシャッフル */
+function stageQueue(id){
+  const g = sg(id);
+  return revengeFirst(shuffle(stageById(id).ix.filter(i => !g.done.includes(i) && !skippedToday(i))));
+}
+function randomQueue(){ return revengeFirst(shuffle(myIdx().filter(i => !skippedToday(i)))); }
+function randName(){ return ({all:'ぜんぶ', k:'書き', y:'読み'})[S.only]; }
+/* 本番模試：本番と同じく書き15問・読み5問（範囲が足りなければある分だけ） */
+function mockQueue(){
+  const pick = (t, n) => shuffle(ofType(t)).slice(0, n);
+  return shuffle([...pick('k', TEST.mockKaki), ...pick('y', TEST.mockYomi)]);
+}
+/* 一周したときの補充 */
+function refill(){
+  if(R.kind === 'random') return randomQueue();
+  if(R.kind === 'sweep'){ const weak = sweepPool().filter(i => level(i) < 2); return weak.length ? weak : sweepPool(); }
+  const more = trainQueue().filter(i => level(i) < 2);
+  return more.length ? more : trainQueue();
+}
+/* 回の中身を切り替える：check／stage／review／random／sweep */
+function setKind(kind, stageId){
+  R.kind = kind; R.stage = kind === 'stage' ? stageId : null;
+  const q = kind === 'check' ? R.check.ix.slice()
+          : kind === 'stage' ? stageQueue(stageId)
+          : kind === 'random' ? randomQueue()
+          : kind === 'sweep' ? sweepPool()
+          : trainQueue();
+  R.queue = q.map(i => ({i, revive:false})); R.pos = 0;
+  if(kind === 'sweep') R.sweepN = q.length;
+}
+
 /* ---------- 画面 ---------- */
 const app = document.getElementById('app');
+let fxBox = null;
+function clearFx(){ if(fxBox){ fxBox.remove(); fxBox = null; } }
 let timerId = null;
 function stopTimer(){ if(timerId){ clearInterval(timerId); timerId = null; } }
+function startTimer(){ stopTimer(); timerId = setInterval(tick, 250); }
 
+/* ▶ボタンで何が始まるか */
+function goPlan(){
+  const nx = nextStage();
+  if(sweepDay() && sweepPool().length) return {kind:'sweep', label:'総ざらい', sub:`これまでに正解した${sweepPool().length}語を、苦手・古い順に`};
+  const pool = S.checkDays.includes(today()) ? [] : checkPool();
+  const after = nx ? `${nx.label} ${sg(nx.id).done.length}/${nx.ix.length}` : '復習の稽古';
+  if(pool.length) return {kind:'check', n:Math.min(pool.length, checkLimit()), label:'きのうの確認から', sub:`確認${Math.min(pool.length, checkLimit())}語 → ${after}`};
+  if(nx) return {kind:'stage', stage:nx.id, label:`${nx.label}をはじめる`, sub:`${nx.ix.length}語中 ${sg(nx.id).done.length}語 正解ずみ`};
+  return {kind:'review', label:'復習の稽古', sub:'苦手な字から出る'};
+}
+function dayMarks(){
+  const d = doneDays(), goalN = S.dayGoal || defaultDayGoal(), n = Math.max(goalN, d.length);
+  return Array.from({length:n}, (_, k) => k < d.length
+    ? `<i class="dm ${S.checkDays.includes(d[k]) ? 'full' : 'on'}">✓</i>` : '<i class="dm"></i>').join('');
+}
+
+let homeDay = null;
+function refreshIfNewDay(){ if(!document.hidden && !R && homeDay && homeDay !== today()) home(); }
+document.addEventListener('visibilitychange', refreshIfNewDay);
+window.addEventListener('pageshow', refreshIfNewDay);
+window.addEventListener('focus', refreshIfNewDay);
 function home(){
-  stopTimer();
-  const best = S.mockBest, left = daysLeft(), m = mastered(), nx = nextStage();
+  stopTimer(); clearFx(); R = null;
   if(S.goal == null) return goalScreen(true);
-  const G = goal(), passPct = Math.min(100, G / TEST.full * 100);
+  if(S.dayGoal == null){ S.dayGoal = defaultDayGoal(); save(); }
+  const last = doneDays().filter(d => d < today()).pop();
+  if(last && last <= addDays(today(), -2) && S.welcomed !== today() && daysLeft() >= 0) return welcome();
+  const best = S.mockBest, left = daysLeft(), plan = goPlan(), nx = nextStage();
+  const G = goal(), gp = Math.min(100, G / TEST.full * 100);
+  const reached = best !== null && best >= G;
   const msg = best === null ? '本番模試で最高点をつくろう'
-            : best >= G ? '🎯 目標達成！ 次は目標を上げてみる？'
+            : reached ? '目標達成！<br>次は目標を上げてみる？'
             : `目標まで あと <b>${G - best}点</b>`;
+  const tSkip = Object.keys(S.skip).filter(i => skippedToday(+i)).length;
+  const tRev = Object.keys(S.skip).filter(i => revenge(+i)).length;
+  const dd = doneDays().length, dg = S.dayGoal;
   app.innerHTML = `
-    <h1>常漢勝つぞ</h1>
-    <div class="muted">${esc(TEST.title)}（${esc(TEST.range || '')}）<br>${left > 0 ? `本番まで あと<b>${left}日</b>` : left === 0 ? '<b>今日が本番！</b>' : '本番は終わりました'}</div>
-    ${TEST.sample ? '<div class="banner">いまはサンプル問題です。本番の範囲はもうすぐ入ります。</div>' : ''}
-    <div class="card">
-      <div class="muted">達成度（1回でも正解した語の割合）</div>
-      <div class="ach">${['k', 'y'].map(t => { const v = achievedPct(t); return `<div>
-        <div class="muted">${t === 'k' ? '書き' : '読み'}</div>
-        <div class="big">${v}<span style="font-size:18px">%</span></div>
-        <div class="meter thin"><div class="fill ok" style="width:${v}%"></div></div>
-        <div class="muted" style="font-size:12px">${achieved(t)}/${ofType(t).length}語</div></div>`; }).join('')}</div>
-      <div class="muted" style="margin-top:14px">最高点（本番模試・${TEST.full}点満点）</div>
-      <div class="big">${best === null ? '—' : best}<span style="font-size:20px">${best === null ? '' : '点'}</span></div>
-      <div class="meter"><div class="fill" style="width:${(best || 0) / TEST.full * 100}%"></div>
-        <div class="pass" style="left:${passPct}%"><span${passPct > 70 ? ' style="left:auto;right:6px"' : ''}>🎯 目標 ${G}点</span></div></div>
-      <div class="row" style="align-items:center"><div style="flex:1">${msg}</div>
-        <button class="btn sub" id="goal" style="width:auto;flex:none;margin:0;padding:8px 12px;font-size:14px">目標を変える</button></div>
+    <div class="head">
+      <h1 class="logo">常漢勝つぞ</h1>
+      <div class="dday">${left > 0 ? `本番まで<b>${kn(Math.min(left, 99))}</b>日` : left === 0 ? '<b>本番当日</b>' : '本番は終了'}</div>
     </div>
+    <div class="subhead">${esc(TEST.title)}（${esc(TEST.range || '')}）</div>
+    ${TEST.sample ? '<div class="banner">いまはサンプル問題です。本番の範囲はもうすぐ入ります。</div>' : ''}
+    <div class="kpis">
+      ${['k', 'y'].map(t => { const v = achievedPct(t), mv = masteredPct(t); return `<div class="kpi">
+        <div class="cap">達成度・${t === 'k' ? '書き' : '読み'}</div>
+        <div class="big">${v}<small>%</small></div>
+        <div class="line"><i class="lo" style="width:${v}%"></i><i style="width:${mv}%"></i></div>
+        <div class="foot">${achieved(t)} / ${ofType(t).length}語 正解ずみ<br>うち覚えた ${mastered(t)}語（${mv}%）</div></div>`; }).join('')}
+      <div class="kpi wide">
+        <div class="cap">最高点・本番模試（${TEST.full}点満点）</div>
+        <div class="big">${best === null ? '—' : best}<small>${best === null ? '' : '点'}</small></div>
+        ${reached ? '<div class="stamp">目標<br>達成</div>' : ''}
+        <div class="line"><i style="width:${(best || 0) / TEST.full * 100}%"></i>
+          <div class="goal-mark${gp > 70 ? ' r' : ''}" style="left:${gp}%"><span>目標 ${G}点</span></div></div>
+        <div class="msg"><div>${msg}</div><button class="btn sub mini" id="goal">目標を変える</button></div>
+      </div>
+      <div class="kpi wide days">
+        <div><div class="cap">やった日</div><div class="big">${dd}<small> / ${dg}日</small></div></div>
+        <div class="marks">${dayMarks()}</div>
+      </div>
+    </div>
+    <div class="sec">稽古</div>
     <div class="seg" id="only">
       <button data-v="all" class="${S.only === 'all' ? 'on' : ''}">ぜんぶ</button>
       <button data-v="k" class="${S.only === 'k' ? 'on' : ''}">書きだけ</button>
@@ -507,106 +719,123 @@ function home(){
       <b id="min">${S.min}分</b>
       <button id="plus" aria-label="1分ふやす">＋</button>
     </div>
-    <button class="btn" id="go">▶ ${nx ? `${esc(nx.name)}に挑戦（${sg(nx.id).done.length}/${nx.ix.length}）` : '復習トレーニング'}</button>
-    <div class="map">${myStages().map(x => { const g = sg(x.id);
-      return `<button data-st="${x.id}" class="${g.cleared ? 'clr' : ''}${nx && nx.id === x.id ? ' now' : ''}">${esc(x.name)}<small>${
-        g.perfect ? '👑 ノーミス' : g.cleared ? '✓ クリア' : `${g.done.length}/${x.ix.length}`}</small></button>`; }).join('')}</div>
-    <div class="muted" style="text-align:center">${nx ? 'ステージは押して選び直せる（クリアしたステージはやり直し）' : '🎉 ぜんぶのステージをクリア！ いまは苦手な字から出る復習モード'}</div>
-    ${(() => { const t = Object.keys(S.skip).filter(i => skippedToday(+i)).length, r = Object.keys(S.skip).filter(i => revenge(+i)).length;
-      return (t ? `<div class="muted" style="text-align:center">🌙 今日は${t}語を明日にまわした</div>` : '')
-           + (r ? `<div class="muted" style="text-align:center">💪 リベンジ${r}語 → いちばん先に出るよ</div>` : ''); })()}
-    <button class="btn sub" id="rand">🎲 ${randName()}（${myIdx().length}語）</button>
+    <button class="btn" id="go">${esc(plan.label)}<small>${esc(plan.sub)}</small></button>
+    <div class="note">${plan.kind === 'sweep' ? '本番の前日と当日は総ざらい。新しい段より、覚えた語を確かめるほうが点になる'
+      : plan.kind === 'check' ? '前の日までの語を思い出してから、段に進む。これがいちばん効く' : '▶を押すと、2日目からは「きのうの確認」から始まる'}</div>
+    <div class="sec">段</div>
+    <div class="fuda">${myStages().map(x => { const g = sg(x.id);
+      return `<button data-st="${x.id}" class="${g.cleared ? 'clr' : ''}${nx && nx.id === x.id ? ' now' : ''}" aria-label="${esc(x.name)}">
+        <span class="v">${esc(x.name)}</span><small>${g.cleared ? '達成' : `${g.done.length}/${x.ix.length}`}</small>${g.perfect ? '<span class="seal">完</span>' : ''}</button>`; }).join('')}</div>
+    <div class="note">${nx ? '段＝約20語のまとまり。札を押すとその段から始められる<br>朱の「完」＝ノーミスで達成。達成した段を押すと0からやり直し' : 'ぜんぶの段を達成。いまは苦手な語から出る復習の稽古'}</div>
+    ${tSkip ? `<div class="note">今日は${tSkip}語を明日にまわした</div>` : ''}
+    ${tRev ? `<div class="note">リベンジ${tRev}語は、いちばん先に出る</div>` : ''}
+    <button class="btn sub" id="rand">乱取り<small>${randName()}・${myIdx().length}語をランダムに</small></button>
     <div class="row">
       <button class="btn sub" id="mock">本番模試</button>
-      <button class="btn sub" id="zukan">ずかん</button>
+      <button class="btn sub" id="zukan">図鑑</button>
     </div>
+    ${checkPool().length && !S.checkDays.includes(today()) && !sweepDay() ? '<div class="note">模試は、▶の「きのうの確認」をすませてからがおすすめ</div>' : ''}
     <div class="card stats">
-      <div><b>${m}/${QUESTIONS.length}</b><span>覚えた</span></div>
-      <div><b>${streakDays()}日</b><span>連続</span></div>
-      <div><b>${S.mockBest === null ? '—' : S.mockBest + '点'}</b><span>模試ベスト</span></div>
+      <div><b>${mastered('k')}</b><span>覚えた・書き</span></div>
+      <div><b>${mastered('y')}</b><span>覚えた・読み</span></div>
+      <div><b>${S.mockBest === null ? '—' : S.mockBest + '点'}</b><span>模試最高</span></div>
     </div>
-    <p class="muted">記録はこのスマホの中だけに残ります。</p>`;
+    <p class="note">記録はこのスマホの中だけに残ります。</p>`;
   document.querySelectorAll('#only button').forEach(b => b.onclick = () => { S.only = b.dataset.v; save(); home(); });
-  const setMin = d => { S.min = Math.min(30, Math.max(1, S.min + d)); save(); document.getElementById('min').textContent = S.min + '分'; };
+  const setMin = d => { S.min = Math.min(30, Math.max(1, S.min + d)); save(); home(); };
   document.getElementById('minus').onclick = () => setMin(-1);
   document.getElementById('plus').onclick = () => setMin(1);
-  document.getElementById('go').onclick = () => startRun('train', nx ? nx.id : null);
-  document.getElementById('rand').onclick = () => startRun('train', null, true);
+  document.getElementById('go').onclick = () => startTrain(goPlan());
+  homeDay = today();
+  document.getElementById('rand').onclick = () => startTrain({kind:'random'});
   document.querySelectorAll('[data-st]').forEach(b => b.onclick = () => {
     const g = sg(b.dataset.st);
-    if(g.cleared){ g.done = []; g.miss = 0; save(); }   // クリア済みはやり直し（クリアの記録は残す）
-    startRun('train', b.dataset.st);
+    if(g.cleared){ g.done = []; g.miss = 0; save(); }   // 達成済みはやり直し（達成の記録は残す）
+    startTrain({kind:'stage', stage:b.dataset.st});
   });
-  document.getElementById('mock').onclick = () => startRun('mock');
+  document.getElementById('mock').onclick = mockChoose;
   document.getElementById('zukan').onclick = zukan;
   document.getElementById('goal').onclick = () => goalScreen(false);
 }
-/* 目標を決める画面（最初に開いたとき／トップの「目標を変える」） */
+/* 2日以上あいて開いたとき */
+function welcome(){
+  clearFx();
+  S.welcomed = today(); save();
+  const nx = nextStage(), pool = sweepDay() ? [] : checkPool();
+  app.innerHTML = `<div class="head"><h1 class="logo">常漢勝つぞ</h1></div>
+    <h1 style="margin-top:18px">おかえり</h1>
+    <div class="card">
+      ${nx ? `<div>${esc(nx.label)}は <b>${sg(nx.id).done.length}/${nx.ix.length}</b> まで進んでるよ。</div>` : '<div>段はぜんぶ達成ずみ。</div>'}
+      <div style="margin-top:6px">${pool.length ? 'まず確認3語だけやろう。それだけで今日の1日になる。' : 'まず3分だけやろう。それだけで今日の1日になる。'}</div>
+      <div class="note" style="text-align:left">やった日は ${doneDays().length}日。途切れても0には戻らない。</div>
+    </div>
+    <button class="btn" id="three">${pool.length ? '3語だけやる' : '3分だけやる'}</button>
+    <button class="btn sub" id="top">トップへ</button>`;
+  document.getElementById('three').onclick = () => {
+    if(pool.length) startTrain({kind:'check', n:3, short:true});
+    else { const m = S.min; S.min = 3; const p = goPlan(); startTrain(p); S.min = m; save(); }
+  };
+  document.getElementById('top').onclick = home;
+}
+/* 目標を決める画面（最初に開いたとき／トップの「目標を変える」）：目標点と、本番までに何日やるか */
 function goalScreen(first){
-  stopTimer();
+  stopTimer(); clearFx();
   let g = clampGoal(S.goal || TEST.pass);
-  app.innerHTML = `<h1>🎯 目標を決めよう</h1>
+  let dg = Math.min(maxDays(), S.dayGoal || defaultDayGoal()); const dg0 = dg;
+  const showDays = daysLeft() > 0;
+  app.innerHTML = `<div class="head"><h1 class="logo">常漢勝つぞ</h1></div>
+    <h1 style="margin-top:18px">目標を決める</h1>
     <div class="card center">
       <div>${esc(TEST.title)}で、何点をめざす？</div>
-      <div class="stepper" style="margin:18px 0 6px">
+      <div class="stepper" style="margin:14px 0 6px">
         <button id="gm" aria-label="5点さげる">−</button>
-        <b id="gv" style="font-size:40px;min-width:120px">${g}点</b>
+        <b id="gv" style="font-size:44px;min-width:130px">${g}点</b>
         <button id="gp" aria-label="5点あげる">＋</button>
       </div>
       <div class="muted">${TEST.pass}点〜${TEST.full}点（${TEST.goalStep}点きざみ）・あとから変えられる</div>
     </div>
-    <button class="btn" id="ok">これでいく！</button>
+    ${showDays ? `<div class="card center">
+      <div>本番までに、何日やる？（1日1分でもOK）</div>
+      <div class="stepper" style="margin:14px 0 6px">
+        <button id="dm" aria-label="1日へらす">−</button>
+        <b id="dv" style="font-size:44px;min-width:130px">${dg}日</b>
+        <button id="dp" aria-label="1日ふやす">＋</button>
+      </div>
+      <div class="muted">1〜${maxDays()}日（もうやった日＋本番の前日まで）。休んだ日があっても0には戻らない</div>
+    </div>` : ''}
+    <button class="btn" id="ok">これでいく</button>
     ${first ? '' : '<button class="btn sub" id="back">もどる</button>'}`;
   const set = d => { g = clampGoal(g + d); document.getElementById('gv').textContent = g + '点'; };
   document.getElementById('gm').onclick = () => set(-TEST.goalStep);
   document.getElementById('gp').onclick = () => set(TEST.goalStep);
-  document.getElementById('ok').onclick = () => { S.goal = g; save(); home(); };
+  if(showDays){
+    const setD = d => { dg = Math.min(maxDays(), Math.max(Math.max(1, doneDays().length), dg + d)); document.getElementById('dv').textContent = dg + '日'; };
+    document.getElementById('dm').onclick = () => setD(-1);
+    document.getElementById('dp').onclick = () => setD(1);
+  }
+  document.getElementById('ok').onclick = () => { S.goal = g; if(showDays && (dg !== dg0 || S.dayGoal == null)) S.dayGoal = dg; save(); home(); };
   if(!first) document.getElementById('back').onclick = home;
 }
 
-/* 出す順：苦手 → まだ出ていない → あと少し → 覚えた（それぞれの中はシャッフル） */
-function trainQueue(){
-  const g = {0:[], '-1':[], 1:[], 2:[]};
-  QUESTIONS.forEach((q, i) => { if((S.only === 'all' || q.t === S.only) && !skippedToday(i)) g[level(i)].push(i); });
-  return revengeFirst([...shuffle(g[0]), ...shuffle(g[-1]), ...shuffle(g[1]), ...shuffle(g[2])]);
-}
-/* 本番模試：本番と同じく書き15問・読み5問（範囲が足りなければある分だけ） */
-function mockQueue(){
-  const pick = (t, n) => shuffle(QUESTIONS.map((q, i) => q.t === t ? i : -1).filter(i => i >= 0)).slice(0, n);
-  return shuffle([...pick('k', TEST.mockKaki), ...pick('y', TEST.mockYomi)]);
-}
-
-/* ステージの出題：まだ正解していない語をシャッフル */
-function stageQueue(id){
-  const g = sg(id);
-  return revengeFirst(shuffle(stageById(id).ix.filter(i => !g.done.includes(i) && !skippedToday(i))));
-}
-/* ランダム：選んでいる種類（ぜんぶ／書きだけ／読みだけ）の全語をシャッフル */
-function myIdx(){ return QUESTIONS.map((q, i) => (S.only === 'all' || q.t === S.only) ? i : -1).filter(i => i >= 0); }
-function randomQueue(){ return revengeFirst(shuffle(myIdx().filter(i => !skippedToday(i)))); }
-function randName(){ return ({all:'ぜんぶ', k:'書き', y:'読み'})[S.only] + 'ランダム'; }
-/* 一周したときの補充：ランダムは並べ直し、復習モードは覚えていない字から */
-function refill(){
-  if(R.random) return randomQueue();
-  const more = trainQueue().filter(i => level(i) < 2);
-  return more.length ? more : trainQueue();
-}
-function setStage(id, random){   // id=null で復習モード／random=true でランダム
-  R.stage = id; R.random = !id && !!random;
-  R.queue = (id ? stageQueue(id) : R.random ? randomQueue() : trainQueue()).map(i => ({i, revive:false}));
-  R.pos = 0;
-}
-
 let R = null;   // 実行中の回
-function startRun(mode, stageId, random){
-  const before = achievedBoth();
-  R = {mode, stage:null, clears:[], queue: mode === 'train' ? [] : mockQueue().map(i => ({i, revive:false})),
-       pos:0, counted:new Set(), right:0, total:0, combo:0, maxCombo:0, before, masteredBefore: mastered(),
-       end: Date.now() + S.min * 60000, minutes: S.min, timeUp:false};
-  if(mode === 'train'){
-    setStage(stageId || null, random);
-    timerId = setInterval(tick, 250);
-  }
+function newRun(mode){
+  return {mode, kind:null, stage:null, clears:[], queue:[], pos:0, right:0, total:0, combo:0, maxCombo:0,
+    before: achievedBoth(), mBefore: {k: mastered('k'), y: mastered('y')}, minutes: S.min,
+    end: Date.now() + S.min * 60000, timeUp:false, skipped:0, check:null, after:null};
+}
+/* 練習を始める：plan.kind＝check（きのうの確認のあと段へ）／stage／review／random／sweep */
+function startTrain(plan){
+  R = newRun('train');
+  if(plan.kind === 'check'){
+    const pool = checkPool();
+    if(pool.length){
+      const nx = nextStage();
+      R.check = {ix: pool.slice(0, plan.n || checkLimit()), done:new Set(), missed:new Set(), short: !!plan.short};
+      R.after = sweepDay() && sweepPool().length ? {kind:'sweep'} : nx ? {kind:'stage', stage:nx.id} : {kind:'review'};
+      setKind('check');
+    }else{ const p = goPlan(); setKind(p.kind === 'check' ? 'review' : p.kind, p.stage); }
+  }else setKind(plan.kind, plan.stage);
+  startTimer();
   show();
 }
 function clock(){
@@ -614,37 +843,47 @@ function clock(){
   return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
 }
 function tick(){
-  const t = document.getElementById('timer'); if(!t) return;
+  if(!R) return stopTimer();
   const sec = Math.max(0, Math.ceil((R.end - Date.now()) / 1000));
-  t.textContent = clock();
-  t.classList.toggle('low', sec <= 10);
-  if(sec === 0){ R.timeUp = true; stopTimer(); }
+  const t = document.getElementById('timer');
+  if(t){ t.textContent = clock(); t.classList.toggle('low', sec <= 10); }
+  if(sec === 0 && !R.timeUp){ R.timeUp = true; stopTimer(); const f = R.onTimeUp; R.onTimeUp = null; if(f) f(); }
+}
+function bar(label, d, n){
+  return `<div class="sbar"><span>${label}</span><div><i style="width:${n ? d / n * 100 : 0}%"></i></div><span>${d}/${n}</span></div>`;
+}
+function stageBar(){ const x = stageById(R.stage); return bar(esc(x.label), sg(R.stage).done.length, x.ix.length); }
+function kindBar(){
+  if(R.mode === 'mock') return '';
+  if(R.kind === 'check') return bar('きのうの確認', R.check.done.size, R.check.ix.length);
+  if(R.kind === 'stage') return stageBar();
+  if(R.kind === 'sweep') return `<div class="sbar"><span>総ざらい（${R.sweepN}語）</span></div>`;
+  if(R.kind === 'random') return `<div class="sbar"><span>乱取り・${randName()}（${myIdx().length}語）</span></div>`;
+  return '<div class="sbar"><span>復習の稽古</span></div>';
 }
 function header(cur){
-  const left = R.mode === 'train'
-    ? `<span class="timer" id="timer">${clock()}</span>`
-    : `<span>${R.pos + 1} / ${R.queue.length}</span>`;
+  const left = R.mode === 'mock'
+    ? `<span class="timer" id="timer">${clock()}</span><span class="muted">${R.pos + 1} / ${R.queue.length}</span>`
+    : `<span class="timer" id="timer">${clock()}</span>`;
   const kind = cur.revive ? '<span class="kind revive">復活戦</span>'
-             : revenge(cur.i) ? '<span class="kind revive">リベンジ</span>'
+             : revenge(cur.i) && R.mode === 'train' ? '<span class="kind revive">リベンジ</span>'
              : `<span class="kind">${QUESTIONS[cur.i].t === 'y' ? '読み' : '書き'}</span>`;
-  return `<div class="top">${left}${kind}<button class="btn sub" style="width:auto;margin:0;padding:6px 12px;font-size:14px" id="quit">やめる</button></div>
-          ${R.stage ? stageBar() : R.random ? `<div class="sbar"><span>🎲 ${randName()}（${myIdx().length}語）</span></div>` : ''}
-          <div class="combo" id="combo">${R.combo >= 2 ? R.combo + 'コンボ！' : ''}</div>`;
-}
-function stageBar(){
-  const x = stageById(R.stage), d = sg(R.stage).done.length;
-  return `<div class="sbar"><span>${esc(x.name)}</span><div><i style="width:${d / x.ix.length * 100}%"></i></div><span>${d}/${x.ix.length}</span></div>`;
+  return `<div class="top">${left}${kind}<button class="btn sub mini" id="quit">やめる</button></div>
+          ${kindBar()}
+          <div class="combo" id="combo">${R.combo >= 2 ? R.combo + '連続正解' : ''}</div>`;
 }
 function show(){
+  clearFx();
+  if(R.mode === 'mock' && R.timeUp) return result();
   if(R.mode === 'train' && R.timeUp) return askExtend();
   if(R.mode === 'train') while(R.pos < R.queue.length && skippedToday(R.queue[R.pos].i)) R.pos++;
-  if(R.mode === 'train' && R.stage && R.pos >= R.queue.length){
-    setStage(R.stage);                                   // 念のため（通常はクリアで抜ける）
-    if(!R.queue.length) return stageRest();              // 残りが明日覚える字だけ
+  if(R.mode === 'train' && R.pos >= R.queue.length){
+    if(R.kind === 'check') return checkDone();
+    if(R.kind === 'stage'){ setKind('stage', R.stage); if(!R.queue.length) return stageRest(); }
+    else { R.queue.push(...refill().map(i => ({i, revive:false}))); }
   }
-  if(R.mode === 'train' && !R.stage && R.pos >= R.queue.length && !R.timeUp) R.queue.push(...refill().map(i => ({i, revive:false})));
   if(R.pos >= R.queue.length) return result();
-  const cur = R.queue[R.pos], item = QUESTIONS[cur.i];
+  const cur = R.queue[R.pos], item = QUESTIONS[cur.i], mock = R.mode === 'mock';
   if(item.t === 'y'){
     app.innerHTML = `${header(cur)}
       <div class="card">
@@ -668,35 +907,39 @@ function show(){
   }else{
     app.innerHTML = `${header(cur)}
       <div class="card">
-        <div class="ask">線のカタカナを漢字にすると？ 頭の中で書いてから、答えを見よう</div>
+        <div class="ask">線のカタカナを漢字に。<br>頭の中で（書ける場所なら指や紙に）書いてから、答えを見よう</div>
         <div class="q${solo(item.q)}">${sentence(item.q)}</div>
-        ${item.m ? `<div class="mean"><b>意味</b>${esc(item.m)}</div>` : ''}
+        ${item.m && !mock ? `<div class="mean"><b>意味</b><span>${esc(item.m)}</span></div>` : ''}
         <button class="btn" id="open">答えを見る</button>
       </div>`;
     document.getElementById('open').onclick = () => {
       app.querySelector('.card').innerHTML = `
         <div class="q${solo(item.q)}">${sentence(item.q)}</div>
-        <div class="answer">${esc(item.w || item.a)}</div>
+        ${chars(item)}
         ${item.w ? '' : `<div class="full">${esc(filled(item))}</div>`}
         ${extra(item)}
-        <div class="row" style="margin-top:12px">
-          <button class="btn ok" id="y">⭕ 正解</button>
-          <button class="btn ng" id="n">❌ 不正解</button>
+        <div class="self">頭の中で書いた字と、ぴったり同じだった？</div>
+        <div class="crit">${CRIT}${mock ? '（間違えた語は明日の確認に出る）' : '（3問あとにもう一度出るから得）'}</div>
+        <div class="row">
+          <button class="btn ok" id="y">正解</button>
+          <button class="btn ng" id="n"><span class="sym">×</span>不正解</button>
         </div>`;
+      bindZoom();
       document.getElementById('y').onclick = () => next(true);
       document.getElementById('n').onclick = () => next(false);
     };
   }
-  document.getElementById('quit').onclick = () => { if(R.total === 0) return home(); result(); };
-  if(R.mode === 'train') tick();
+  document.getElementById('quit').onclick = () => { if(R.total === 0) return home(); result(true); };
+  tick();
 }
 function answered(ok, typed){
   const item = QUESTIONS[R.queue[R.pos].i];
   const card = app.querySelector('.card');
   card.innerHTML = `
     <div class="q${solo(item.q)}">${sentence(item.q)}</div>
-    <div class="judge ${ok ? 'ok' : 'ng'}">${ok ? '○ 正解！' : (typed ? `× 「${esc(typed)}」ではなく` : '答えは')}</div>
+    <div class="judge ${ok ? 'ok' : 'ng'}">${ok ? '正解' : (typed ? `「${esc(typed)}」ではなく` : '答えは')}</div>
     ${ok ? `<div class="full">${item.a.map(esc).join(' ／ ')}</div>` : `<div class="answer" style="font-size:36px">${item.a.map(esc).join('<span class="muted"> ／ </span>')}</div>`}
+    ${!ok && R.mode === 'train' ? '<div class="muted center">だいじょうぶ。この語は3問あとに「復活戦」でもう一度出る</div>' : ''}
     ${extra(item)}
     <button class="btn" id="nx">つぎへ</button>`;
   const b = document.getElementById('nx'); b.focus();
@@ -706,14 +949,12 @@ function answered(ok, typed){
 function bump(ok){
   const c = document.getElementById('combo');
   const n = ok ? R.combo + 1 : 0;
-  if(c){ c.textContent = n >= 2 ? n + 'コンボ！' : ''; if(n >= 2){ c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); } }
+  if(c){ c.textContent = n >= 2 ? n + '連続正解' : ''; if(n >= 2){ c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); } }
   if(ok && navigator.vibrate) try{ navigator.vibrate(30); }catch(e){}
 }
 function next(ok, alreadyBumped){
   const cur = R.queue[R.pos];
-  // 復活戦での正解は「あと少し」止まり（覚えたにはしない）
-  if(cur.revive && ok){ record(cur.i, true); st(cur.i).streak = 1; save(); }
-  else record(cur.i, ok);
+  record(cur.i, ok);
   R.total++;
   if(ok){ R.right++; R.combo++; R.maxCombo = Math.max(R.maxCombo, R.combo); } else R.combo = 0;
   if(!alreadyBumped) bump(ok);
@@ -725,92 +966,112 @@ function next(ok, alreadyBumped){
 }
 /* 同じ語を今日5回つづけて間違えた：「次は行ける」か「今日はスキップ（明日覚える）」を選ぶ */
 function askSkip(i, ok){
-  const q = QUESTIONS[i], w = q.t === 'y' ? q.q.replace(/［|］/g, '') : (q.w || q.a);
-  app.innerHTML = `<h1>😵 ${SKIP_AFTER}回つづけてまちがえた</h1>
+  const q = QUESTIONS[i];
+  app.innerHTML = `<h1>手ごわい語に当たった</h1>
+    <div class="muted">今日${SKIP_AFTER}回つづけて×</div>
     <div class="card center">
-      <div class="big">${esc(w)}</div>
+      <div class="big">${esc(word(q))}</div>
       ${q.t === 'y' ? `<div class="full">${q.a.map(esc).join(' ／ ')}</div>` : ''}
       ${extra(q)}
-      <div style="margin-top:8px">この字、どうする？</div>
+      <div style="margin-top:8px">この語、どうする？</div>
     </div>
-    <button class="btn" id="go2">💪 次は行ける！</button>
-    <button class="btn sub" id="skip">🌙 今日はスキップ（明日覚える）</button>`;
+    <button class="btn" id="go2">次は行ける！<small>3問あとにもう一度出る</small></button>
+    <button class="btn sub" id="skip">今日はスキップ<small>明日覚える（明日いちばん先に出る）</small></button>`;
   document.getElementById('go2').onclick = () => { st(i).wr = 0; save(); afterAnswer(R.queue[R.pos], ok); };
   document.getElementById('skip').onclick = () => {
     S.skip[i] = today(); save();
     R.queue = R.queue.filter((e, k) => k <= R.pos || e.i !== i);   // この先の出番を消す
-    R.skipped = (R.skipped || 0) + 1;
+    R.skipped++;
     afterAnswer(R.queue[R.pos], ok);
   };
 }
 function afterAnswer(cur, ok){
   R.pos++;
-  if(R.mode === 'train' && R.stage){
+  if(R.mode === 'train' && R.kind === 'check'){
+    if(ok) R.check.done.add(cur.i); else R.check.missed.add(cur.i);
+    if(R.check.ix.every(i => R.check.done.has(i) || skippedToday(i))) return checkDone();
+  }
+  if(R.mode === 'train' && R.kind === 'stage'){
     const g = sg(R.stage), x = stageById(R.stage);
     if(ok){ if(!g.done.includes(cur.i)) g.done.push(cur.i); } else g.miss++;
     save();
     if(g.done.length >= x.ix.length) return stageClear();
   }
-  // 復習モードで全部出し切ったら、覚えていない問題からもう一周
-  if(R.mode === 'train' && !R.stage && R.pos >= R.queue.length && !R.timeUp){
-    R.queue.push(...refill().map(i => ({i, revive:false})));
-  }
   show();
+}
+/* 一区切りの画面から続けるとき：止めていた残り時間から再開 */
+function resume(left, kind, stageId){
+  R.pausedAt = null;
+  R.end = Date.now() + left; R.timeUp = left <= 0;
+  setKind(kind, stageId);
+  if(!R.timeUp) startTimer();
+  show();
+}
+/* きのうの確認がおわった */
+function checkDone(){
+  stopTimer(); R.pausedAt = Date.now();
+  const c = R.check, n = c.ix.length, first = c.ix.filter(i => c.done.has(i) && !c.missed.has(i)).length;
+  if(!S.checkDays.includes(today())){ S.checkDays.push(today()); save(); }
+  const left = Math.max(0, R.end - Date.now());
+  const nxt = R.after.kind === 'stage' && sg(R.after.stage).cleared ? (nextStage() ? {kind:'stage', stage:nextStage().id} : {kind:'review'}) : R.after;
+  const label = nxt.kind === 'stage' ? `次へ：${stageById(nxt.stage).label}` : nxt.kind === 'sweep' ? '次へ：総ざらい' : '次へ：復習の稽古';
+  app.innerHTML = `<h1>きのうの確認おわり</h1>
+    <div class="card center">
+      <div class="big">${first}<small> / ${n}語</small></div>
+      <div>${first === n ? 'ぜんぶ一発で思い出せた' : `${n}語中${first}語は一発で思い出せた`}</div>
+      ${first < n ? '<div class="muted">間違えた語は、明日の確認にも出る</div>' : ''}
+      <div class="muted" style="margin-top:6px">今日の1日 ✓</div>
+    </div>
+    <button class="btn" id="nx">${label}${left > 0 ? `<small>残り ${clock()}</small>` : ''}</button>
+    <button class="btn sub" id="fin">${c.short ? 'ここで終わる（今日の1日になった）' : '終わる'}</button>`;
+  document.getElementById('nx').onclick = () => resume(left, nxt.kind, nxt.stage);
+  document.getElementById('fin').onclick = () => result();
 }
 /* ステージの残りが「明日覚える字」だけになった：次のステージへ進める */
 function stageRest(){
-  stopTimer();
+  stopTimer(); R.pausedAt = Date.now();
   const x = stageById(R.stage), g = sg(R.stage), rest = x.ix.filter(i => !g.done.includes(i)).length;
   const left = Math.max(0, R.end - Date.now()), nx = nextStage();
-  app.innerHTML = `<h1>🌙 ${esc(x.name)}は今日ここまで</h1>
+  app.innerHTML = `<h1>${esc(x.label)}は今日ここまで</h1>
     <div class="card center">
-      <div>${x.ix.length - rest}/${x.ix.length}語 正解！</div>
+      <div class="big">${x.ix.length - rest}<small> / ${x.ix.length}語 正解</small></div>
       <div class="muted">残り${rest}語は明日覚える字。明日いちばん先に出るよ</div>
     </div>
-    <button class="btn" id="nx">${nx ? `次へ：${esc(nx.name)}` : '復習モードへ'}${left > 0 ? `（残り ${clock()}）` : ''}</button>
+    <button class="btn" id="nx">${nx ? `次へ：${esc(nx.label)}` : '次へ：復習の稽古'}${left > 0 ? `<small>残り ${clock()}</small>` : ''}</button>
     <button class="btn sub" id="fin">終わる</button>`;
-  document.getElementById('nx').onclick = () => {
-    R.end = Date.now() + left; R.timeUp = left <= 0;
-    setStage(nx ? nx.id : null);
-    if(!R.timeUp) timerId = setInterval(tick, 250);
-    show();
-  };
-  document.getElementById('fin').onclick = result;
+  document.getElementById('nx').onclick = () => resume(left, nx ? 'stage' : 'review', nx ? nx.id : null);
+  document.getElementById('fin').onclick = () => result();
 }
 /* ステージクリア：タイマーを止めて祝う。続けるなら残り時間から再開 */
 function stageClear(){
-  stopTimer();
+  stopTimer(); R.pausedAt = Date.now();
   const x = stageById(R.stage), g = sg(R.stage);
   const first = !g.cleared;
   g.cleared = true; if(g.miss === 0) g.perfect = true; save();
-  R.clears.push(x.name);
+  R.clears.push(x.label);
   const left = Math.max(0, R.end - Date.now()), nx = nextStage();
-  app.innerHTML = `<h1>🎉 ステージクリア！</h1>
+  app.innerHTML = `<h1>段の達成</h1>
     <div class="card center">
-      <div class="big pop">${esc(x.name)}</div>
-      <div style="margin-top:6px">${x.ix.length}語 ぜんぶ正解！</div>
-      ${g.miss === 0 ? '<div class="goal">👑 ノーミス！</div>' : `<div class="muted">まちがい ${g.miss}回 → 次はノーミスで👑</div>`}
-      ${first ? '' : '<div class="muted">（やり直しクリア）</div>'}
+      <div class="stamp big-stamp">${esc(x.name)}<br>達成</div>
+      <div style="margin-top:6px">${x.ix.length}語 ぜんぶ正解</div>
+      ${g.miss === 0 ? '<div class="goal">ノーミス。朱印「完」</div>' : `<div class="muted">間違い ${g.miss}回。次はノーミスで朱印「完」</div>`}
+      ${first ? '' : '<div class="muted">（やり直しで達成）</div>'}
+      <div class="muted" style="margin-top:6px">正解した語は、明日の確認でもう一度思い出すと「覚えた」になる</div>
     </div>
-    <button class="btn" id="nx">${nx ? `次へ：${esc(nx.name)}` : '復習モードへ'}${left > 0 ? `（残り ${clock()}）` : ''}</button>
+    <button class="btn" id="nx">${nx ? `次へ：${esc(nx.label)}` : '次へ：復習の稽古'}${left > 0 ? `<small>残り ${clock()}</small>` : ''}</button>
     <button class="btn sub" id="fin">終わる</button>`;
   confetti();
-  document.getElementById('nx').onclick = () => {
-    R.end = Date.now() + left; R.timeUp = left <= 0;
-    setStage(nx ? nx.id : null);
-    if(!R.timeUp) timerId = setInterval(tick, 250);
-    show();
-  };
-  document.getElementById('fin').onclick = result;
+  document.getElementById('nx').onclick = () => resume(left, nx ? 'stage' : 'review', nx ? nx.id : null);
+  document.getElementById('fin').onclick = () => result();
 }
 /* 時間切れ：延長するか聞く（解いていた問題が終わってから出る） */
 function askExtend(){
   stopTimer();
-  app.innerHTML = `<h1>⏰ 時間です！</h1>
+  app.innerHTML = `<h1>時間です</h1>
     <div class="card center">
       <div class="muted">ここまで（${R.minutes}分）</div>
-      ${R.stage ? `<div style="margin:6px 0">${stageBar()}</div>` : ''}
-      <div class="big">${R.right}<span style="font-size:20px"> / ${R.total}問 正解</span></div>
+      ${kindBar()}
+      <div class="big" style="margin-top:6px">${R.right}<small> / ${R.total}問 正解</small></div>
       <div style="margin-top:6px">延長する？</div>
     </div>
     <div class="row">${EXTEND_MIN.map(m => `<button class="btn" data-m="${m}">もう${m}分</button>`).join('')}</div>
@@ -818,64 +1079,136 @@ function askExtend(){
   app.querySelectorAll('[data-m]').forEach(b => b.onclick = () => {
     const m = +b.dataset.m;
     R.end = Date.now() + m * 60000; R.minutes += m; R.timeUp = false;
-    if(R.pos >= R.queue.length && !R.stage){
-      R.queue.push(...refill().map(i => ({i, revive:false})));
-    }
-    timerId = setInterval(tick, 250);
+    startTimer();
     show();
   });
-  document.getElementById('fin').onclick = result;
+  document.getElementById('fin').onclick = () => result();
 }
-function result(){
-  stopTimer();
-  const after = achievedBoth(), gained = mastered() - R.masteredBefore;
+
+/* ---------- 本番模試（本番と同じ20問・10分・書きに意味を出さない） ---------- */
+function mockChoose(){
+  stopTimer(); clearFx();
+  app.innerHTML = `<h1>本番模試</h1>
+    <div class="card">
+      <div>本番と同じ<b>20問（書き${TEST.mockKaki}・読み${TEST.mockYomi}）</b>を<b>10分</b>で。書きに意味は出ない。</div>
+      ${S.mockLast !== null ? `<div class="muted" style="margin-top:6px">前回 ${S.mockLast}点・最高 ${S.mockBest}点</div>` : ''}
+    </div>
+    <button class="btn" id="paper">紙で解く<small>本番と同じ。ノートや裏紙に書いて、あとで答え合わせ</small></button>
+    <button class="btn sub" id="phone">スマホで解く<small>1問ずつ答えを見て採点</small></button>
+    <button class="btn sub" id="back">もどる</button>`;
+  document.getElementById('paper').onclick = () => startMock(true);
+  document.getElementById('phone').onclick = () => startMock(false);
+  document.getElementById('back').onclick = home;
+}
+function startMock(paper){
+  R = newRun('mock'); R.paper = paper; R.kind = 'mock';
+  R.queue = mockQueue().map(i => ({i, revive:false}));
+  R.end = Date.now() + MOCK_SEC * 1000; R.minutes = MOCK_SEC / 60;
+  if(paper){ R.onTimeUp = () => paperList(true); paperList(false); }
+  else { R.onTimeUp = () => result(); startTimer(); show(); }
+}
+function prompt(item){ return item.t === 'k' ? esc(item.q.replace(/［|］/g, '')) : sentence(item.q); }
+/* 紙で解く：20問の一覧（書きはカタカナ・読みは線の語） */
+function paperList(timeUp){
+  if(!timeUp) startTimer();
+  app.innerHTML = `<div class="top"><span class="timer" id="timer">${clock()}</span><span class="kind">紙で解く</span>
+      <button class="btn sub mini" id="quit">やめる</button></div>
+    ${timeUp ? '<div class="goal" style="text-align:center;margin-top:10px">時間です。答え合わせへ</div>' : ''}
+    <div class="card">
+      <div class="ask">ノートや裏紙に、番号と答えを書く。書きは漢字で、読みはひらがなで。</div>
+      <ol class="paper">${R.queue.map((e, k) => { const it = QUESTIONS[e.i];
+        return `<li><span class="pn">${k + 1}</span><span class="pk">${it.t === 'k' ? '書' : '読'}</span><span class="pq">${prompt(it)}</span></li>`; }).join('')}</ol>
+    </div>
+    <button class="btn" id="grade">答え合わせへ</button>`;
+  document.getElementById('grade').onclick = () => { stopTimer(); R.end = Date.now(); paperGrade(); };
+  document.getElementById('quit').onclick = home;
+  if(!timeUp) tick();
+}
+/* 紙の答え合わせ：1問ずつ答えを見て正解／不正解 */
+function paperGrade(){
+  if(R.pos >= R.queue.length) return result();
+  const cur = R.queue[R.pos], item = QUESTIONS[cur.i];
+  app.innerHTML = `<div class="top"><span class="timer">${R.pos + 1}<small style="font-size:14px"> / ${R.queue.length}</small></span><span class="kind">答え合わせ</span><button class="btn sub mini" id="quit">やめる</button></div>
+    <div class="card">
+      <div class="q${item.t === 'k' ? ' solo' : solo(item.q)}">${prompt(item)}</div>
+      ${item.t === 'k' ? chars(item) : `<div class="answer" style="font-size:36px">${item.a.map(esc).join('<span class="muted"> ／ </span>')}</div>`}
+      ${extra(item)}
+      <div class="crit">${item.t === 'k' ? CRIT : 'ひらがなが1字でも違ったら不正解'}（間違えた語は明日の確認に出る）</div>
+      <div class="self">紙に書いた字と、ぴったり同じだった？</div>
+      <div class="row">
+        <button class="btn ok" id="y">正解</button>
+        <button class="btn ng" id="n"><span class="sym">×</span>不正解</button>
+      </div>
+    </div>`;
+  bindZoom();
+  const go = ok => { record(cur.i, ok); R.total++; if(ok) R.right++; R.pos++; paperGrade(); };
+  document.getElementById('y').onclick = () => go(true);
+  document.getElementById('n').onclick = () => go(false);
+  document.getElementById('quit').onclick = () => { if(R.total === 0) return home(); result(true); };
+}
+
+function result(quit){
+  stopTimer(); document.querySelectorAll('.zoom').forEach(z => z.remove());
+  const after = achievedBoth();
   let body = '';
   if(R.mode === 'mock'){
-    const score = Math.round(TEST.full * R.right / Math.max(1, R.queue.length));
-    const done = R.total === R.queue.length;
-    const best = S.mockBest;
-    if(done && (best === null || score > best)){ S.mockBest = score; save(); }
+    const n = R.queue.length, score = Math.round(TEST.full * R.right / Math.max(1, n));
+    const done = R.paper ? R.total === n : (R.total === n || R.timeUp);
+    const best = S.mockBest, prev = S.mockLast;
+    if(done){ if(best === null || score > best) S.mockBest = score; S.mockLast = score; save(); }
     const passed = done && score >= goal();
     body = `
-      <div class="muted">本番模試（${R.queue.length}問・${TEST.full}点満点に換算）${done ? '' : '※途中でやめたので記録しません'}</div>
-      <div class="big">${score}<span style="font-size:20px">点</span></div>
-      ${passed ? `<div class="goal pop">🎯 目標${goal()}点 達成！</div>` : `<div>目標${goal()}点まで あと <b>${Math.max(0, goal() - score)}点</b></div>`}
-      ${done && best !== null && score > best ? `<div class="goal" style="font-size:20px">自己ベスト更新！（${best}点 → ${score}点）</div>` : ''}`;
+      <div class="muted">本番模試・${R.paper ? '紙' : 'スマホ'}（${n}問・${TEST.full}点満点）${done ? '' : '<br>※途中でやめたので記録しない'}</div>
+      ${!R.paper && R.timeUp && R.total < n ? `<div class="muted">時間切れ。解けなかった${n - R.total}問は0点</div>` : ''}
+      <div class="big">${score}<small>点</small></div>
+      ${done && prev !== null ? `<div>前回 ${prev}点 → 今回 <b>${score}点</b>${score > prev ? ` <span class="plus">+${score - prev}</span>` : ''}</div>` : ''}
+      ${passed ? `<div class="stamp big-stamp">目標<br>達成</div><div class="muted">目標 ${goal()}点</div>` : `<div>目標${goal()}点まで あと <b>${Math.max(0, goal() - score)}点</b></div>`}
+      ${done && best !== null && score > best ? `<div class="goal" style="font-size:19px;margin-top:6px">自己ベスト更新（${best}点 → ${score}点）</div>` : ''}
+      ${done && R.total > R.right ? '<div class="muted" style="margin-top:6px">間違えた語は、明日の「きのうの確認」に出る</div>' : ''}`;
     if(passed) confetti();
   }else{
+    const gk = mastered('k') - R.mBefore.k, gy = mastered('y') - R.mBefore.y;
     body = `
-      <div class="muted">今日の${R.minutes}分</div>
-      <div class="big">${R.right}<span style="font-size:20px"> / ${R.total}問 正解</span></div>
-      <div>最高 <b>${R.maxCombo}</b> コンボ</div>
-      ${R.skipped ? `<div class="muted">🌙 明日覚える字 ${R.skipped}語</div>` : ''}
-      ${R.clears.length ? `<div class="goal" style="font-size:20px;margin-top:6px">クリア：${R.clears.map(esc).join('・')}</div>` : ''}
-      ${R.stage && !sg(R.stage).cleared ? `<div style="margin-top:6px">${stageBar()}</div><div class="muted">続きは次の回から</div>` : ''}
-      <div style="margin-top:8px">覚えた <b>${mastered()}</b>字（${gained >= 0 ? '+' : ''}${gained}）・あと少し <b>${almost()}</b>字</div>
-      <div class="muted">あと少しの字は、次の回でも正解すると「覚えた」になる</div>
-      ${['k', 'y'].map(t => `<div>達成度（${t === 'k' ? '書き' : '読み'}） ${R.before[t]}% → <b>${after[t]}%</b>${after[t] > R.before[t] ? ` <span class="goal" style="font-size:16px">+${after[t] - R.before[t]}</span>` : ''}</div>`).join('')}
-      ${['k', 'y'].filter(t => after[t] === 100 && R.before[t] < 100).map(t => `<div class="goal pop">🎉 ${t === 'k' ? '書き' : '読み'}の語をぜんぶ1回は正解した！</div>`).join('')}`;
+      <div class="muted">今日の稽古（${Math.max(1, Math.round((Math.min(R.pausedAt || Date.now(), R.end) - (R.end - R.minutes * 60000)) / 60000))}分）</div>
+      <div class="big">${R.right}<small> / ${R.total}問 正解</small></div>
+      <div>最高 <b>${R.maxCombo}</b> 連続正解</div>
+      ${R.total ? '<div class="goal" style="font-size:18px;margin-top:4px">今日の1日 ✓</div>' : ''}
+      ${R.skipped ? `<div class="muted">明日覚える字 ${R.skipped}語</div>` : ''}
+      ${R.clears.length ? `<div class="goal" style="font-size:19px;margin-top:6px">達成：${R.clears.map(esc).join('・')}</div>` : ''}
+      ${R.kind === 'stage' && !sg(R.stage).cleared ? `<div style="margin-top:6px">${stageBar()}</div><div class="muted">続きは次の稽古で</div>` : ''}
+      <div style="margin-top:8px">覚えた　書き <b>${mastered('k')}</b>語${gk > 0 ? ` <span class="plus">+${gk}</span>` : ''}・読み <b>${mastered('y')}</b>語${gy > 0 ? ` <span class="plus">+${gy}</span>` : ''}</div>
+      <div class="muted">あと少しの語は、明日もう一度正解すると「覚えた」になる（▶の最初に出る）</div>
+      <div class="delta">${['k', 'y'].map(t => `<span>達成度・${t === 'k' ? '書き' : '読み'}</span><span>${R.before[t]}% → <b>${after[t]}%</b>${after[t] > R.before[t] ? ` <span class="plus">+${after[t] - R.before[t]}%</span>` : ''}</span>`).join('')}</div>
+      ${['k', 'y'].filter(t => after[t] === 100 && R.before[t] < 100).map(t => `<div class="goal pop">${t === 'k' ? '書き' : '読み'}の語を、ぜんぶ一度は正解</div>`).join('')}`;
     if(['k', 'y'].some(t => after[t] === 100 && R.before[t] < 100)) confetti();
   }
-  app.innerHTML = `<h1>おつかれさま！</h1><div class="card center">${body}</div>
-    <button class="btn" id="home">トップへ</button>`;
+  const wasMock = R.mode === 'mock';
+  app.innerHTML = `<h1>おつかれさま</h1><div class="card center">${body}</div>
+    <button class="btn" id="again">${wasMock ? 'もう一度 本番模試' : `続けて稽古<small>${esc(goPlan().label)}</small>`}</button>
+    <button class="btn sub" id="home">トップへ</button>`;
   document.getElementById('home').onclick = home;
+  document.getElementById('again').onclick = () => wasMock ? mockChoose() : startTrain(goPlan());
   R = null;
 }
 function zukan(){
+  clearFx();
   const tiles = QUESTIONS.map((q, i) => {
-    const l = level(i), w = q.t === 'y' ? q.q.match(/［(.+?)］/)[1] : (q.w || q.a);
-    return `<div class="tile s${l}">${esc(w)}<small>${q.t === 'y' ? '読み' : '書き'}${skippedToday(i) ? '・🌙明日' : revenge(i) ? '・💪' : ''}</small></div>`;
+    const l = level(i);
+    return `<div class="tile s${l}">${esc(word(q))}<small>${q.t === 'y' ? '読み' : '書き'}${skippedToday(i) ? '・明日' : revenge(i) ? '・リベンジ' : ''}</small></div>`;
   }).join('');
-  app.innerHTML = `<h1>ずかん</h1>
-    <div class="legend"><span><i style="background:var(--ok-bg)"></i>覚えた</span><span><i style="background:var(--gold-bg)"></i>あと少し</span>
-      <span><i style="background:var(--ng-bg)"></i>苦手</span><span><i style="border:1px solid var(--line)"></i>まだ</span></div>
+  app.innerHTML = `<div class="top"><h1>図鑑</h1><button class="btn sub mini" id="home2">トップへ</button></div>
+    <div class="legend"><span><i style="background:var(--ink);border-color:var(--ink)"></i>覚えた</span><span><i style="border:1.5px solid var(--kin)"></i>あと少し</span>
+      <span><i style="background:var(--shu-bg);border-color:var(--shu)"></i>苦手</span><span><i style="background:var(--card)"></i>まだ</span></div>
     <div class="grid">${tiles}</div>
     <button class="btn" id="home">トップへ</button>`;
   document.getElementById('home').onclick = home;
+  document.getElementById('home2').onclick = home;
 }
 function confetti(){
-  const box = document.createElement('div'); box.className = 'confetti';
-  const colors = ['#ef4444','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ec4899'];
+  clearFx();
+  const box = document.createElement('div'); box.className = 'confetti'; fxBox = box;
+  const cs = getComputedStyle(document.documentElement);
+  const colors = ['--shu', '--kin', '--ink', '--shu'].map(v => cs.getPropertyValue(v).trim());   // 朱・金・墨（テーマに合わせる）
   for(let k = 0; k < 80; k++){
     const i = document.createElement('i');
     i.style.left = Math.random() * 100 + 'vw';
@@ -884,7 +1217,7 @@ function confetti(){
     i.style.animationDelay = Math.random() * .6 + 's';
     box.appendChild(i);
   }
-  document.body.appendChild(box); setTimeout(() => box.remove(), 4500);
+  document.body.appendChild(box); setTimeout(() => { if(fxBox === box) clearFx(); }, 4500);
 }
 home();
 </script>
