@@ -45,6 +45,7 @@ b{font-weight:700}
 .btn.ok{background:var(--shu);border-color:var(--shu);color:var(--on-shu)}
 .btn.ng{background:transparent;color:var(--ink)}
 .btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.4;cursor:default}
 .btn.mini{width:auto;flex:none;margin:0;min-height:44px;padding:10px 14px;font-size:14px;letter-spacing:.06em}
 #quit{min-width:72px}
 .row{display:flex;gap:10px;margin:10px 0}
@@ -146,7 +147,8 @@ input.ans::placeholder{color:var(--sub);font-size:18px}
 .goal{font-family:"Noto Serif JP",serif;font-size:22px;font-weight:900;color:var(--shu);letter-spacing:.06em}
 .plus{color:var(--shu);font-weight:700}
 /* 図鑑 */
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px}
+.tile .rd{display:block;font-family:"Zen Kaku Gothic New",sans-serif;font-weight:500;font-size:12px;line-height:1.3;margin-top:2px;word-break:break-all}
 .tile{padding:8px 2px;text-align:center;font-family:"Noto Serif JP",serif;font-weight:900;font-size:15px;border:1px solid var(--hair);background:var(--card)}
 .tile small{display:block;font-family:"Zen Kaku Gothic New",sans-serif;font-size:12px;font-weight:500;color:var(--sub)}
 .tile.s2{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
@@ -530,6 +532,9 @@ function achievedBoth(){ return {k: achievedPct('k'), y: achievedPct('y')}; }
 /* 覚えた（一度でも別の日に2回つづけて正解した語）：表示用。一度届いたら下がらない */
 function mastered(t){ return (t ? ofType(t) : QUESTIONS.map((_, i) => i)).filter(i => S.items[i] && S.items[i].everM).length; }
 function masteredPct(t){ const n = ofType(t).length; return n ? Math.floor(mastered(t) / n * 100) : 0; }
+/* 間違えた語：間違えると入り、その日の最初の答えで正解すると外れる（あとで正解しただけでは外れない） */
+function isWrong(i){ const s = S.items[i]; if(!s || !s.seen) return false; return s.wrong !== undefined ? s.wrong : s.streak === 0; }
+function wrongIdx(){ return myIdx().filter(i => isWrong(i) && !skippedToday(i)); }
 function almost(){ return QUESTIONS.filter((_, i) => level(i) === 1).length; }
 /* やった日（本番の日までに練習した日の数）。途切れても0に戻らない */
 function doneDays(){ return [...new Set(S.days)].filter(d => d <= TEST.date).sort(); }
@@ -543,6 +548,8 @@ function record(i, ok){
   if(s.wrDay !== t){ s.wr = 0; s.wrDay = t; }   // 今日の連続まちがい
   s.wr = ok ? 0 : (s.wr || 0) + 1;
   if(ok && revenge(i)) delete S.skip[i];        // リベンジ成功
+  if(s.fDay !== t){ s.fDay = t; s.wrong = !ok; }   // その日の最初の答え
+  else if(!ok) s.wrong = true;
   s.lastDay = t;
   if(!S.days.includes(t)) S.days.push(t);
   save();
@@ -558,6 +565,11 @@ function esc(x){ return String(x).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt
 function sentence(q){ return esc(q).replace(/［(.+?)］/g, '<u>$1</u>'); }
 function solo(q){ return /^［[^］]+］[ぁ-ゖ]*$/.test(q) ? ' solo' : ''; }
 function word(item){ return item.t === 'y' ? item.q.replace(/［|］/g, '') : (item.w || item.a); }
+/* 読みがな（図鑑用）：書きはカタカナの問題をひらがなに、読みは答え */
+function reading(item){
+  if(item.t === 'y') return item.a.join('／');
+  return item.q.replace(/［|］/g, '').replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
+}
 function filled(item){   // 書きの答えを入れた文（カタカナ部分を漢字に置き換え）
   if(item.t !== 'k') return item.q.replace(/［|］/g,'');
   return item.q.replace(/［.+?］/, item.a);
@@ -611,6 +623,7 @@ function stageQueue(id){
   const g = sg(id);
   return revengeFirst(shuffle(stageById(id).ix.filter(i => !g.done.includes(i) && !skippedToday(i))));
 }
+function wrongQueue(){ return revengeFirst(wrongIdx().sort(byOld)); }
 function randomQueue(){ return revengeFirst(shuffle(myIdx().filter(i => !skippedToday(i)))); }
 function randName(){ return ({all:'ぜんぶ', k:'書き', y:'読み'})[S.only]; }
 /* 本番模試：本番と同じく書き15問・読み5問（範囲が足りなければある分だけ） */
@@ -631,6 +644,7 @@ function setKind(kind, stageId){
   const q = kind === 'check' ? R.check.ix.slice()
           : kind === 'stage' ? stageQueue(stageId)
           : kind === 'random' ? randomQueue()
+          : kind === 'wrong' ? R.wset.ix.slice()
           : kind === 'sweep' ? sweepPool()
           : trainQueue();
   R.queue = q.map(i => ({i, revive:false})); R.pos = 0;
@@ -729,7 +743,10 @@ function home(){
     <div class="note">${nx ? '段＝約20語のまとまり。札を押すとその段から始められる<br>朱の「完」＝ノーミスで達成。達成した段を押すと0からやり直し' : 'ぜんぶの段を達成。いまは苦手な語から出る復習の稽古'}</div>
     ${tSkip ? `<div class="note">今日は${tSkip}語を明日にまわした</div>` : ''}
     ${tRev ? `<div class="note">リベンジ${tRev}語は、いちばん先に出る</div>` : ''}
-    <button class="btn sub" id="rand">乱取り<small>${randName()}・${myIdx().length}語をランダムに</small></button>
+    <div class="row">
+      <button class="btn sub" id="rand">乱取り<small>${randName()}${myIdx().length}語をランダムに</small></button>
+      <button class="btn sub" id="wrong"${wrongIdx().length ? '' : ' disabled'}>間違えた語<small>${wrongIdx().length ? `${randName()}・${wrongIdx().length}語` : 'いまは0語'}</small></button>
+    </div>
     <div class="row">
       <button class="btn sub" id="mock">本番模試</button>
       <button class="btn sub" id="zukan">図鑑</button>
@@ -748,6 +765,7 @@ function home(){
   document.getElementById('go').onclick = () => startTrain(goPlan());
   homeDay = today();
   document.getElementById('rand').onclick = () => startTrain({kind:'random'});
+  document.getElementById('wrong').onclick = () => startTrain({kind:'wrong'});
   document.querySelectorAll('[data-st]').forEach(b => b.onclick = () => {
     const g = sg(b.dataset.st);
     if(g.cleared){ g.done = []; g.miss = 0; save(); }   // 達成済みはやり直し（達成の記録は残す）
@@ -826,6 +844,11 @@ function newRun(mode){
 /* 練習を始める：plan.kind＝check（きのうの確認のあと段へ）／stage／review／random／sweep */
 function startTrain(plan){
   R = newRun('train');
+  if(plan.kind === 'wrong'){
+    const ix = wrongQueue();
+    if(!ix.length){ R = null; return home(); }
+    R.wset = {ix, done:new Set(), before: wrongIdx().length};
+  }
   if(plan.kind === 'check'){
     const pool = checkPool();
     if(pool.length){
@@ -858,6 +881,7 @@ function kindBar(){
   if(R.kind === 'check') return bar('きのうの確認', R.check.done.size, R.check.ix.length);
   if(R.kind === 'stage') return stageBar();
   if(R.kind === 'sweep') return `<div class="sbar"><span>総ざらい（${R.sweepN}語）</span></div>`;
+  if(R.kind === 'wrong') return bar('間違えた語', R.wset.done.size, R.wset.ix.length);
   if(R.kind === 'random') return `<div class="sbar"><span>乱取り・${randName()}（${myIdx().length}語）</span></div>`;
   return '<div class="sbar"><span>復習の稽古</span></div>';
 }
@@ -879,6 +903,7 @@ function show(){
   if(R.mode === 'train') while(R.pos < R.queue.length && skippedToday(R.queue[R.pos].i)) R.pos++;
   if(R.mode === 'train' && R.pos >= R.queue.length){
     if(R.kind === 'check') return checkDone();
+    if(R.kind === 'wrong') return wrongDone();
     if(R.kind === 'stage'){ setKind('stage', R.stage); if(!R.queue.length) return stageRest(); }
     else { R.queue.push(...refill().map(i => ({i, revive:false}))); }
   }
@@ -991,6 +1016,10 @@ function afterAnswer(cur, ok){
     if(ok) R.check.done.add(cur.i); else R.check.missed.add(cur.i);
     if(R.check.ix.every(i => R.check.done.has(i) || skippedToday(i))) return checkDone();
   }
+  if(R.mode === 'train' && R.kind === 'wrong'){
+    if(ok) R.wset.done.add(cur.i);
+    if(R.wset.ix.every(i => R.wset.done.has(i) || skippedToday(i))) return wrongDone();
+  }
   if(R.mode === 'train' && R.kind === 'stage'){
     const g = sg(R.stage), x = stageById(R.stage);
     if(ok){ if(!g.done.includes(cur.i)) g.done.push(cur.i); } else g.miss++;
@@ -1006,6 +1035,29 @@ function resume(left, kind, stageId){
   setKind(kind, stageId);
   if(!R.timeUp) startTimer();
   show();
+}
+/* 間違えた語をひと通り正解した */
+function wrongDone(){
+  stopTimer(); R.pausedAt = Date.now();
+  const before = R.wset.before, after = wrongIdx().length, left = Math.max(0, R.end - Date.now()), p = goPlan();
+  app.innerHTML = `<h1>間違えた語、ひと通り正解</h1>
+    <div class="card center">
+      <div class="big">${before}<small>語</small> → ${after}<small>語</small></div>
+      <div>${before - after > 0 ? `${before - after}語が外れた` : 'まだ外れた語はない'}</div>
+      ${after ? '<div class="muted">今日はじめて答えたときに正解した語だけが外れる。<br>間違えてから正解した語は、明日の最初に正解すると外れる</div>' : '<div class="goal">間違えた語は 0語</div>'}
+    </div>
+    <button class="btn" id="nx">次へ：${esc(p.label)}${left > 0 ? `<small>残り ${clock()}</small>` : ''}</button>
+    <button class="btn sub" id="fin">終わる</button>`;
+  document.getElementById('nx').onclick = () => {
+    R.pausedAt = null; R.end = Date.now() + left; R.timeUp = left <= 0;
+    if(p.kind === 'check'){ const pool = checkPool(), nx = nextStage();
+      R.check = {ix: pool.slice(0, checkLimit()), done:new Set(), missed:new Set()};
+      R.after = sweepDay() && sweepPool().length ? {kind:'sweep'} : nx ? {kind:'stage', stage:nx.id} : {kind:'review'}; }
+    setKind(p.kind, p.stage);
+    if(!R.timeUp) startTimer();
+    show();
+  };
+  document.getElementById('fin').onclick = () => result();
 }
 /* きのうの確認がおわった */
 function checkDone(){
@@ -1193,8 +1245,8 @@ function result(quit){
 function zukan(){
   clearFx();
   const tiles = QUESTIONS.map((q, i) => {
-    const l = level(i);
-    return `<div class="tile s${l}">${esc(word(q))}<small>${q.t === 'y' ? '読み' : '書き'}${skippedToday(i) ? '・明日' : revenge(i) ? '・リベンジ' : ''}</small></div>`;
+    const l = isWrong(i) ? 0 : level(i);
+    return `<div class="tile s${l}">${esc(word(q))}<span class="rd">${esc(reading(q))}</span><small>${q.t === 'y' ? '読み' : '書き'}${skippedToday(i) ? '・明日' : revenge(i) ? '・リベンジ' : ''}</small></div>`;
   }).join('');
   app.innerHTML = `<div class="top"><h1>図鑑</h1><button class="btn sub mini" id="home2">トップへ</button></div>
     <div class="legend"><span><i style="background:var(--ink);border-color:var(--ink)"></i>覚えた</span><span><i style="border:1.5px solid var(--kin)"></i>あと少し</span>
