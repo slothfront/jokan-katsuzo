@@ -192,6 +192,47 @@ input.ans::placeholder{color:var(--sub);font-size:18px}
 .mn-b ul{margin:8px 0 0;padding-left:1.2em}
 .mn-b li{margin:4px 0}
 
+/* 押せるもの＝影がある／記録＝枠なし（2026-10-14 見分けやすく） */
+.btn{box-shadow:0 4px 0 color-mix(in srgb,var(--ink) 45%,var(--paper))}
+.btn.sub,.fuda button,.tebiki,.nav{box-shadow:0 3px 0 var(--ink)}
+.btn.ok{box-shadow:0 4px 0 color-mix(in srgb,var(--shu) 60%,#000)}
+.btn.mini{box-shadow:0 2px 0 var(--ink)}
+.btn:active,.fuda button:active,.nav:active,.tebiki:active,.go:active{transform:translateY(3px);box-shadow:none}
+.btn:disabled,.nav:disabled{box-shadow:none}
+.fuda{padding-bottom:3px}
+.kpis{gap:0;border-top:1px solid var(--hair);border-bottom:1px solid var(--hair)}
+.kpi{border:0;background:transparent;padding:10px 8px}
+.kpi+.kpi{border-top:1px dotted var(--hair)}
+.kpis .kpi:nth-child(2){border-top:0;border-left:1px dotted var(--hair)}
+.kpi.wide .foot{margin-top:4px;font-size:13px}
+.sec-s{letter-spacing:.05em;color:var(--sub);margin-left:-4px}
+/* 今日の稽古（いちばん上の赤いボタン） */
+.go{display:block;width:100%;margin:16px 0 0;border:0;border-radius:12px;background:var(--shu);color:var(--on-shu);padding:20px 12px 14px;cursor:pointer;
+  box-shadow:0 5px 0 color-mix(in srgb,var(--shu) 60%,#000),0 8px 18px rgba(0,0,0,.16);font-family:"Noto Serif JP",serif;text-align:center}
+.go-t{display:block;font-size:24px;font-weight:900;letter-spacing:.06em;line-height:1.3}
+.go-ar{font-size:20px;margin-right:6px}
+.go small{display:block;font-family:"Zen Kaku Gothic New",sans-serif;font-size:14px;font-weight:700;margin-top:6px;opacity:.95}
+.go-hint{text-align:center;font-size:14px;font-weight:700;margin:14px 0 2px}
+.setline{text-align:center;color:var(--sub);font-size:14px}
+.link{background:none;border:0;padding:10px 6px;min-height:44px;color:var(--ink);font:inherit;font-weight:700;text-decoration:underline;text-underline-offset:4px;cursor:pointer}
+.shu{color:var(--shu)}
+/* ほかの稽古 */
+.navs{display:grid;grid-template-columns:1fr 1fr;gap:10px 10px;padding-bottom:3px}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:6px;text-align:left;background:var(--card);color:var(--ink);border:1.5px solid var(--ink);border-radius:10px;padding:12px 10px 12px 14px;min-height:64px;cursor:pointer;font:inherit}
+.nav b{display:block;font-family:"Noto Serif JP",serif;font-weight:900;font-size:17px;letter-spacing:.08em}
+.nav small{display:block;font-size:12px;color:var(--sub);margin-top:2px}
+.nav i{font-style:normal;font-size:22px;color:var(--sub)}
+.nav:disabled{opacity:.45;cursor:default}
+/* 区切りの目盛り */
+.ck{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--sub);margin-top:6px;font-weight:700}
+.ck span{margin-right:4px}
+.ck i{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--ink)}
+.ck i.on{background:var(--shu);border-color:var(--shu)}
+.ck b{margin-left:6px;color:var(--ink)}
+/* お試しの吹き出し */
+.coach{display:flex;gap:10px;align-items:flex-start;background:var(--shu-bg);border-left:4px solid var(--shu);padding:10px 12px;margin:12px 0 4px;font-size:15px;line-height:1.6}
+.coach .cn{flex:none;width:24px;height:24px;border-radius:50%;background:var(--shu);color:var(--on-shu);display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:900}
+
 /* 書きの答え：1字ずつの枠と拡大 */
 .chars{display:flex;justify-content:center;align-items:flex-end;gap:6px;margin:6px 0 4px;flex-wrap:wrap}
 .chars .ch{width:76px;height:76px;border:1.5px solid var(--ink);background:var(--card);color:var(--ink);font-family:"Noto Serif JP",serif;font-weight:900;font-size:52px;line-height:1;cursor:zoom-in;padding:0;
@@ -472,7 +513,8 @@ const QUESTIONS = [
 const EXTEND_MIN = [1, 3, 5];   // 時間切れのときに選べる延長
 const REVIVE_GAP = 3;        // 間違えた問題は3問あとに「復活戦」で出す
 const SKIP_AFTER = 5;        // 同じ語を今日この回数つづけて間違えたら「次は行ける／今日はスキップ」を選ばせる
-const STAGE_SIZE = 20;       // 1ステージの語数の目安（範囲を等分する）
+const STAGE_SIZE = 20;       // 1つの段の語数（端数は最後の段に入れる：221語＝20語×10段＋21語）
+const CHUNKS = [5, 10, 20];  // 段の中の「区切り」の大きさ。5語から始め、ノーミスで大きく、2問まちがえたら5語に戻る
 const CHECK_MAX = 10;        // 「きのうの確認」の最大語数（設定時間の1/3・1語15秒の見積もりと小さいほう。最低2語）
 const MOCK_SEC = 600;        // 本番模試の時間（本番と同じ10分）
 const CRIT = '1字ずつ見て、とめ・はね・送りがなまで同じなら正解。1画でも迷ったら不正解';
@@ -484,19 +526,19 @@ function kn(n){
   const t = Math.floor(n / 10), o = n % 10;
   return (t > 1 ? d[t] : '') + '十' + (o ? d[o] : '');
 }
-/* ステージ：書き・読みをそれぞれ用紙の順に約20語ずつ区切る。
-   「ぜんぶ」のときは書き2つ→読み1つの割合で並べる（本番の15：5に近い） */
+/* 段：20語ずつ（最後の段に端数）。どの段も書きと読みを同じ割合で混ぜる（本番の20問に近い形）。
+   書き・読みはそれぞれ用紙の順 */
 function makeStages(){
-  const split = (t, name) => {
-    const ix = QUESTIONS.map((q, i) => q.t === t ? i : -1).filter(i => i >= 0);
-    const n = Math.max(1, Math.ceil(ix.length / STAGE_SIZE)), out = [];
-    for(let k = 0; k < n; k++){
-      const a = Math.round(ix.length * k / n), b = Math.round(ix.length * (k + 1) / n);
-      out.push({id: t + (k + 1), t, name: name + kn(k + 1), label: name + '・' + kn(k + 1) + 'の段', ix: ix.slice(a, b), at: (k + 1) / n});
-    }
-    return out;
-  };
-  return [...split('k', '書き'), ...split('y', '読み')].sort((a, b) => a.at - b.at || (a.t === 'k' ? -1 : 1));
+  const K = QUESTIONS.map((q, i) => q.t === 'k' ? i : -1).filter(i => i >= 0);
+  const Y = QUESTIONS.map((q, i) => q.t === 'y' ? i : -1).filter(i => i >= 0);
+  const all = K.length + Y.length, n = Math.max(1, Math.floor(all / STAGE_SIZE)), out = [];
+  const T = k => k >= n ? all : k * STAGE_SIZE;               // k段目までの語数
+  const Kc = k => Math.round(T(k) * K.length / all);          // そのうちの書きの数
+  for(let k = 0; k < n; k++){
+    const ix = [...K.slice(Kc(k), Kc(k + 1)), ...Y.slice(T(k) - Kc(k), T(k + 1) - Kc(k + 1))];
+    out.push({id: 'd' + (k + 1), name: kn(k + 1) + 'の段', label: kn(k + 1) + 'の段', ix});
+  }
+  return out;
 }
 const STAGES = makeStages();
 const KEY = 'jokan:' + TEST.id;
@@ -528,7 +570,10 @@ if(!S.checkDays) S.checkDays = [];                        // 「きのうの確�
 if(S.mockLast === undefined) S.mockLast = null;           // 前回の模試の点
 const sg = id => S.stages[id] || (S.stages[id] = {done:[], miss:0, cleared:false, perfect:false});
 const stageById = id => STAGES.find(x => x.id === id);
-const myStages = () => STAGES.filter(x => S.only === 'all' || x.t === S.only);
+/* 段の中で、いま選んでいる種類（ぜんぶ／書きだけ／読みだけ）の語 */
+const sIx = x => x.ix.filter(i => S.only === 'all' || QUESTIONS[i].t === S.only);
+const sDone = x => sIx(x).filter(i => sg(x.id).done.includes(i)).length;
+if(!CHUNKS.includes(S.chunk)) S.chunk = CHUNKS[0];         // いまの区切りの大きさ
 /* 目標：生徒が自分で決める（合格点〜満点・5点きざみ）。未設定なら最初に聞く */
 const clampGoal = g => Math.min(TEST.full, Math.max(TEST.pass, Math.round(g / TEST.goalStep) * TEST.goalStep));
 const goal = () => clampGoal(S.goal || TEST.pass);
@@ -543,8 +588,8 @@ if(!S.later) S.later = {};                                // あとまわしの�
 const isLater = i => !!S.later[i];
 /* 練習で出さない語：今日スキップした語・あとまわしの語（模試とめくり札には出す） */
 const out = i => skippedToday(i) || isLater(i);
-const stageOpen = x => x.ix.some(i => !sg(x.id).done.includes(i) && !out(i));
-function nextStage(){ return myStages().find(x => !sg(x.id).cleared && stageOpen(x)) || null; }
+const stageOpen = x => sIx(x).some(i => !sg(x.id).done.includes(i) && !out(i));
+function nextStage(){ return STAGES.find(x => !sg(x.id).cleared && stageOpen(x)) || null; }
 const st = i => S.items[i] || (S.items[i] = {seen:0, ok:0, streak:0});
 
 /* 覚えた＝別の日に2回つづけて正解／あと少し＝正解は1日分だけ／苦手＝直近が不正解 */
@@ -664,7 +709,7 @@ function trainQueue(){
 /* ステージ：まだ正解していない語をシャッフル */
 function stageQueue(id){
   const g = sg(id);
-  return revengeFirst(shuffle(stageById(id).ix.filter(i => !g.done.includes(i) && !out(i))));
+  return revengeFirst(shuffle(sIx(stageById(id)).filter(i => !g.done.includes(i) && !out(i))));
 }
 function wrongQueue(){ return revengeFirst(wrongIdx().sort(byOld)); }
 function randomQueue(){ return revengeFirst(shuffle(myIdx().filter(i => !out(i)))); }
@@ -684,6 +729,8 @@ function refill(){
 /* 回の中身を切り替える：check／stage／review／random／sweep */
 function setKind(kind, stageId){
   R.kind = kind; R.stage = kind === 'stage' ? stageId : null;
+  if(kind === 'stage' && !(R.ck && R.ck.stage === stageId)) R.ck = {stage:stageId, size:S.chunk, got:0, miss:0};   // 区切りを始める
+  if(kind !== 'stage') R.ck = null;
   const q = kind === 'check' ? R.check.ix.slice()
           : kind === 'stage' ? stageQueue(stageId)
           : kind === 'random' ? randomQueue()
@@ -705,12 +752,12 @@ function startTimer(){ stopTimer(); timerId = setInterval(tick, 250); }
 /* ▶ボタンで何が始まるか */
 function goPlan(){
   const nx = nextStage();
-  if(sweepDay() && sweepPool().length) return {kind:'sweep', label:'総ざらい', sub:`これまでに正解した${sweepPool().length}語を、苦手・古い順に`};
+  if(sweepDay() && sweepPool().length) return {kind:'sweep', label:'総ざらい', sub:`総ざらい：これまでに正解した${sweepPool().length}語`};
   const pool = S.checkDays.includes(today()) ? [] : checkPool();
-  const after = nx ? `${nx.label} ${sg(nx.id).done.length}/${nx.ix.length}` : '復習の稽古';
-  if(pool.length) return {kind:'check', n:Math.min(pool.length, checkLimit()), label:'きのうの確認から', sub:`確認${Math.min(pool.length, checkLimit())}語 → ${after}`};
-  if(nx) return {kind:'stage', stage:nx.id, label:`${nx.label}をはじめる`, sub:`${nx.ix.length}語中 ${sg(nx.id).done.length}語 正解ずみ`};
-  return {kind:'review', label:'復習の稽古', sub:'苦手な字から出る'};
+  const after = nx ? `${nx.label}（${S.chunk}語ずつ）` : '復習の稽古';
+  if(pool.length) return {kind:'check', n:Math.min(pool.length, checkLimit()), label:'きのうの確認から', sub:`きのうの確認${Math.min(pool.length, checkLimit())}語 → ${after}`};
+  if(nx) return {kind:'stage', stage:nx.id, label:`${nx.label}をはじめる`, sub:`${nx.label}から　${S.chunk}語ずつ`};
+  return {kind:'review', label:'復習の稽古', sub:'復習の稽古：苦手な字から出る'};
 }
 function dayMarks(){
   const d = doneDays(), goalN = S.dayGoal || defaultDayGoal(), n = Math.max(goalN, d.length);
@@ -739,7 +786,8 @@ function home(){
             : `目標まで あと <b>${G - best}点</b>`;
   const tSkip = Object.keys(S.skip).filter(i => skippedToday(+i)).length;
   const tRev = Object.keys(S.skip).filter(i => revenge(+i)).length;
-  const dd = doneDays().length, dg = S.dayGoal;
+  const dd = doneDays().length, dg = S.dayGoal, nLat = Object.keys(S.later).length;
+  const nav = (id, t, sub, dis) => `<button class="nav" id="${id}"${dis ? ' disabled' : ''}><span><b>${t}</b><small>${sub}</small></span><i>›</i></button>`;
   app.innerHTML = `
     <div class="head">
       <h1 class="logo">常漢勝つぞ</h1>
@@ -747,6 +795,13 @@ function home(){
     </div>
     <div class="subhead">${esc(TEST.title)}（${esc(TEST.range || '')}）</div>
     ${TEST.sample ? '<div class="banner">いまはサンプル問題です。本番の範囲はもうすぐ入ります。</div>' : ''}
+    <button class="go" id="go"><span class="go-t"><span class="go-ar">▶</span>今日の稽古をはじめる</span><small>${esc(plan.sub)}</small></button>
+    <div class="go-hint">迷ったら、この赤いボタンだけ押せばOK</div>
+    <div class="setline">${({all:'ぜんぶ', k:'書きだけ', y:'読みだけ'})[S.only]}・${S.min}分・目標${G}点　<button class="link" id="set">変える</button></div>
+    ${plan.kind === 'sweep' ? '<div class="note">本番の前日と当日は総ざらい。新しい段より、覚えた語を確かめるほうが点になる</div>'
+      : plan.kind === 'check' ? '<div class="note">前の日までの語を思い出してから、段に進む。これがいちばん効く</div>' : ''}
+    ${tRev ? `<div class="note">リベンジ${tRev}語は、いちばん先に出る</div>` : ''}
+    <div class="sec">いまの記録<span class="sec-s">（見るだけ）</span></div>
     <div class="kpis">
       ${['k', 'y'].map(t => { const v = achievedPct(t), mv = masteredPct(t); return `<div class="kpi">
         <div class="cap">達成度・${t === 'k' ? '書き' : '読み'}</div>
@@ -759,58 +814,34 @@ function home(){
         ${reached ? '<div class="stamp">目標<br>達成</div>' : ''}
         <div class="line"><i style="width:${(best || 0) / TEST.full * 100}%"></i>
           <div class="goal-mark${gp > 70 ? ' r' : ''}" style="left:${gp}%"><span>目標 ${G}点</span></div></div>
-        <div class="msg"><div>${msg}</div><button class="btn sub mini" id="goal">目標を変える</button></div>
+        <div class="foot">${msg}</div>
       </div>
       <div class="kpi wide days">
         <div><div class="cap">やった日</div><div class="big">${dd}<small> / ${dg}日</small></div></div>
         <div class="marks">${dayMarks()}</div>
       </div>
     </div>
-    <div class="sec">稽古</div>
-    <div class="seg" id="only">
-      <button data-v="all" class="${S.only === 'all' ? 'on' : ''}">ぜんぶ</button>
-      <button data-v="k" class="${S.only === 'k' ? 'on' : ''}">書きだけ</button>
-      <button data-v="y" class="${S.only === 'y' ? 'on' : ''}">読みだけ</button>
-    </div>
-    <div class="stepper">
-      <span class="muted">時間</span>
-      <button id="minus" aria-label="1分へらす">−</button>
-      <b id="min">${S.min}分</b>
-      <button id="plus" aria-label="1分ふやす">＋</button>
-    </div>
-    <button class="btn" id="go">${esc(plan.label)}<small>${esc(plan.sub)}</small></button>
-    <div class="note">${plan.kind === 'sweep' ? '本番の前日と当日は総ざらい。新しい段より、覚えた語を確かめるほうが点になる'
-      : plan.kind === 'check' ? '前の日までの語を思い出してから、段に進む。これがいちばん効く' : '▶を押すと、2日目からは「きのうの確認」から始まる'}</div>
-    <div class="sec">段</div>
-    <div class="fuda">${myStages().map(x => { const g = sg(x.id);
+    <div class="sec">段<span class="sec-s">（押すとその段から）</span></div>
+    <div class="fuda">${STAGES.map(x => { const g = sg(x.id), n = sIx(x).length, d = sDone(x), nl = sIx(x).filter(isLater).length;
       return `<button data-st="${x.id}" class="${g.cleared ? 'clr' : ''}${nx && nx.id === x.id ? ' now' : ''}" aria-label="${esc(x.name)}">
-        <span class="v">${esc(x.name)}</span><small>${g.cleared ? '達成' : `${g.done.length}/${x.ix.length}`}${x.ix.some(isLater) && !g.cleared ? `<br>後${x.ix.filter(isLater).length}` : ''}</small>${g.perfect ? '<span class="seal">完</span>' : ''}</button>`; }).join('')}</div>
-    <div class="note">${nx ? '段＝約20語のまとまり。札を押すとその段から始められる<br>朱の「完」＝ノーミスで達成。達成した段を押すと0からやり直し' : 'ぜんぶの段を達成。いまは苦手な語から出る復習の稽古'}</div>
+        <span class="v">${esc(x.name)}</span><small>${g.cleared ? '達成' : `${d}/${n}`}${nl && !g.cleared ? `<br>後${nl}` : ''}</small>${g.perfect ? '<span class="seal">完</span>' : ''}</button>`; }).join('')}</div>
+    <div class="note">${nx ? `段＝20語のまとまり（書きと読みが混ざる${S.only === 'all' ? '' : `。いまは${S.only === 'k' ? '書き' : '読み'}だけ出す`}）<br>朱の「完」＝ノーミスで達成。達成した段を押すと0からやり直し` : 'ぜんぶの段を達成。いまは苦手な語から出る復習の稽古'}</div>
     ${tSkip ? `<div class="note">今日は${tSkip}語を明日にまわした</div>` : ''}
-    ${tRev ? `<div class="note">リベンジ${tRev}語は、いちばん先に出る</div>` : ''}
-    ${Object.keys(S.later).length ? `<div class="note">あとまわし${Object.keys(S.later).length}語（練習には出ない・模試とめくり札には出る。図鑑で戻せる）</div>` : ''}
-    <div class="row">
-      <button class="btn sub" id="rand">乱取り<small>${randName()}${myIdx().length}語をランダムに</small></button>
-      <button class="btn sub" id="wrong"${wrongIdx().length ? '' : ' disabled'}>間違えた語<small>${wrongIdx().length ? `${randName()}・${wrongIdx().length}語` : 'いまは0語'}</small></button>
+    ${nLat ? `<div class="note">あとまわし${nLat}語（練習には出ない・模試とめくり札には出る。図鑑で戻せる）</div>` : ''}
+    <div class="sec">ほかの稽古</div>
+    <div class="navs">
+      ${nav('rand', '乱取り', `${myIdx().length}語をランダムに`)}
+      ${nav('wrong', '間違えた語', wrongIdx().length ? `${randName()}・${wrongIdx().length}語` : 'いまは0語', !wrongIdx().length)}
+      ${nav('mock', '本番模試', '20問・10分')}
+      ${nav('zukan', '図鑑', '語の一覧・あとまわし')}
+      ${nav('cards', 'めくり札', '採点しないで眺めるだけ')}
+      ${nav('manual', '手引き', '使い方・お試し2問')}
     </div>
-    <div class="row">
-      <button class="btn sub" id="mock">本番模試</button>
-      <button class="btn sub" id="zukan">図鑑</button>
-    </div>
-    ${checkPool().length && !S.checkDays.includes(today()) && !sweepDay() ? '<div class="note">模試は、▶の「きのうの確認」をすませてからがおすすめ</div>' : ''}
-    <div class="card stats">
-      <div><b>${mastered('k')}</b><span>覚えた・書き</span></div>
-      <div><b>${mastered('y')}</b><span>覚えた・読み</span></div>
-      <div><b>${S.mockBest === null ? '—' : S.mockBest + '点'}</b><span>模試最高</span></div>
-    </div>
-    <button class="btn sub" id="cards">めくり札<small>採点しないで、めくって見るだけ（段ごと・ぜんぶランダム）</small></button>
-    <button class="tebiki" id="manual"><span class="tb-mark">手引</span><span class="tb-txt"><b>手引き</b><small>使い方・「覚えた」などの意味</small></span><span class="tb-arrow">›</span></button>
+    ${checkPool().length && !S.checkDays.includes(today()) && !sweepDay() ? '<div class="note">模試は、赤いボタンの「きのうの確認」をすませてからがおすすめ</div>' : ''}
+    <div class="note">押せるところ＝影がある・「›」がある／記録＝枠なし</div>
     <p class="note">記録はこのスマホの中だけに残ります。</p>`;
-  document.querySelectorAll('#only button').forEach(b => b.onclick = () => { S.only = b.dataset.v; save(); home(); });
-  const setMin = d => { S.min = Math.min(30, Math.max(1, S.min + d)); save(); home(); };
-  document.getElementById('minus').onclick = () => setMin(-1);
-  document.getElementById('plus').onclick = () => setMin(1);
   document.getElementById('go').onclick = () => startTrain(goPlan());
+  document.getElementById('set').onclick = settings;
   homeDay = today();
   document.getElementById('rand').onclick = () => startTrain({kind:'random'});
   document.getElementById('wrong').onclick = () => startTrain({kind:'wrong'});
@@ -821,9 +852,37 @@ function home(){
   });
   document.getElementById('mock').onclick = mockChoose;
   document.getElementById('zukan').onclick = zukan;
-  document.getElementById('goal').onclick = () => goalScreen(false);
   document.getElementById('manual').onclick = manual;
   document.getElementById('cards').onclick = cardMenu;
+}
+/* 稽古の設定（トップの「変える」）：出す種類・時間・目標 */
+function settings(){
+  document.querySelectorAll('.sheet').forEach(x => x.remove());
+  const box = document.createElement('div'); box.className = 'sheet';
+  box.innerHTML = `<div class="sheet-in card">
+      <div class="cap">出す語</div>
+      <div class="seg" id="only">
+        <button data-v="all" class="${S.only === 'all' ? 'on' : ''}">ぜんぶ</button>
+        <button data-v="k" class="${S.only === 'k' ? 'on' : ''}">書きだけ</button>
+        <button data-v="y" class="${S.only === 'y' ? 'on' : ''}">読みだけ</button>
+      </div>
+      <div class="cap" style="margin-top:16px">1回の時間</div>
+      <div class="stepper" style="margin-top:4px">
+        <button id="minus" aria-label="1分へらす">−</button>
+        <b id="min">${S.min}分</b>
+        <button id="plus" aria-label="1分ふやす">＋</button>
+      </div>
+      <button class="btn sub" id="goal" style="margin-top:16px">目標を変える<small>いまは${goal()}点・${S.dayGoal}日</small></button>
+      <button class="btn" id="sclose">これでOK</button></div>`;
+  document.body.appendChild(box);
+  const again = () => { home(); settings(); };
+  box.onclick = e => { if(e.target === box) box.remove(); };
+  box.querySelectorAll('#only button').forEach(b => b.onclick = () => { S.only = b.dataset.v; save(); again(); });
+  const setMin = d => { S.min = Math.min(30, Math.max(1, S.min + d)); save(); again(); };
+  box.querySelector('#minus').onclick = () => setMin(-1);
+  box.querySelector('#plus').onclick = () => setMin(1);
+  box.querySelector('#goal').onclick = () => { box.remove(); goalScreen(false); };
+  box.querySelector('#sclose').onclick = () => box.remove();
 }
 /* あとまわし以外がぜんぶ「覚えた」になった：戻すか聞く */
 function laterBack(lat){
@@ -898,8 +957,85 @@ function goalScreen(first){
     document.getElementById('dm').onclick = () => setD(-1);
     document.getElementById('dp').onclick = () => setD(1);
   }
-  document.getElementById('ok').onclick = () => { S.goal = g; if(showDays && (dg !== dg0 || S.dayGoal == null)) S.dayGoal = dg; save(); home(); };
+  document.getElementById('ok').onclick = () => { S.goal = g; if(showDays && (dg !== dg0 || S.dayGoal == null)) S.dayGoal = dg; save(); if(first && !S.trialDone) trial(0); else home(); };
   if(!first) document.getElementById('back').onclick = home;
+}
+
+/* お試し2問（最初に1回だけ・手引きからもう一度）：書き1問・読み1問を、吹き出しの説明つきで。記録には残さない */
+function trial(step){
+  stopTimer(); clearFx(); window.scrollTo(0, 0);
+  const first = STAGES[0].ix, ik = first.find(i => QUESTIONS[i].t === 'k'), iy = first.find(i => QUESTIONS[i].t === 'y');
+  const coach = (n, t) => `<div class="coach"><span class="cn">${n}</span><span>${t}</span></div>`;
+  const top = k => `<div class="top"><span class="kind">お試し ${k}/2</span><button class="btn sub mini" id="tskip">とばす</button></div>
+    <div class="note" style="text-align:left">使い方を2問だけ。記録には残らない。</div>`;
+  const done = () => { S.trialDone = true; save(); };
+  const bindSkip = () => { document.getElementById('tskip').onclick = () => { done(); home(); }; };
+  if(step === 0){
+    const item = QUESTIONS[ik];
+    app.innerHTML = `${top(1)}
+      <div class="card">
+        <div class="ask">書きの問題</div>
+        <div class="q${solo(item.q)}">${sentence(item.q)}</div>
+        ${item.m ? `<div class="mean"><b>意味</b><span>${esc(item.m)}</span></div>` : ''}
+        ${coach('1', '線のカタカナを、<b>頭の中で漢字に</b>書いてみる（指や紙に書いてもOK）')}
+        ${coach('2', '書けたら（わからなくても）下のボタン')}
+        <button class="btn" id="open">答えを見る</button>
+      </div>`;
+    bindSkip();
+    document.getElementById('open').onclick = () => {
+      app.querySelector('.card').innerHTML = `
+        <div class="q${solo(item.q)}">${sentence(item.q)}</div>
+        ${chars(item)}
+        ${coach('3', `頭の中の字と1字ずつ見くらべる。<b>同じなら「正解」</b>、ちがう・迷ったら<b>「不正解」</b>を自分で押す`)}
+        <div class="row">
+          <button class="btn ok" id="y">正解</button>
+          <button class="btn ng" id="n"><span class="sym">×</span>不正解</button>
+        </div>`;
+      bindZoom();
+      document.getElementById('y').onclick = () => trial(1);
+      document.getElementById('n').onclick = () => trial(1);
+    };
+    return;
+  }
+  if(step === 1){
+    const item = QUESTIONS[iy];
+    app.innerHTML = `${top(2)}
+      <div class="card">
+        <div class="ask">読みの問題</div>
+        <div class="q${solo(item.q)}">${sentence(item.q)}</div>
+        ${coach('1', '線の部分の読みを<b>ひらがなで</b>入れて「こたえる」。わからなければ「わからない」')}
+        <form id="f" autocomplete="off">
+          <input class="ans" id="in" inputmode="text" lang="ja" enterkeyhint="done" placeholder="ひらがなで入力">
+          <button class="btn" type="submit">こたえる</button>
+        </form>
+        <button class="btn sub" id="pass">わからない</button>
+      </div>`;
+    bindSkip();
+    const fin = typed => {
+      const ok = !!typed && item.a.some(a => norm(a) === norm(typed));
+      app.querySelector('.card').innerHTML = `
+        <div class="q${solo(item.q)}">${sentence(item.q)}</div>
+        <div class="judge ${ok ? 'ok' : 'ng'}">${ok ? '正解' : '答えは'}</div>
+        <div class="answer" style="font-size:36px">${item.a.map(esc).join('<span class="muted"> ／ </span>')}</div>
+        ${coach('2', '読みはアプリが自動で○×をつける。本番の稽古では、間違えた語は3問あとにもう一度出る')}
+        <button class="btn" id="nx">つぎへ</button>`;
+      document.getElementById('nx').onclick = () => trial(2);
+    };
+    document.getElementById('f').onsubmit = e => { e.preventDefault(); const v = document.getElementById('in').value; if(norm(v)) fin(v); };
+    document.getElementById('pass').onclick = () => fin('');
+    return;
+  }
+  done();
+  app.innerHTML = `<h1 style="margin-top:18px">これで全部</h1>
+    <div class="card center">
+      <div class="stamp big-stamp">使い方<br>OK</div>
+      <div style="margin-top:6px">あとは毎日、トップの<b class="shu">赤いボタン</b>を押すだけ。</div>
+      <div class="muted" style="margin-top:6px">何を出すかはアプリが決める。最初は5語ずつ、慣れてきたら一気に。<br>1日1分でもいい。</div>
+    </div>
+    <button class="go" id="go"><span class="go-t"><span class="go-ar">▶</span>今日の稽古をはじめる</span><small>${esc(goPlan().sub)}</small></button>
+    <button class="btn sub" id="top">トップを見る</button>`;
+  document.getElementById('go').onclick = () => startTrain(goPlan());
+  document.getElementById('top').onclick = home;
 }
 
 let R = null;   // 実行中の回
@@ -942,11 +1078,19 @@ function tick(){
 function bar(label, d, n){
   return `<div class="sbar"><span>${label}</span><div><i style="width:${n ? d / n * 100 : 0}%"></i></div><span>${d}/${n}</span></div>`;
 }
-function stageBar(){ const x = stageById(R.stage); return bar(esc(x.label), sg(R.stage).done.length, x.ix.length); }
+function stageBar(){ const x = stageById(R.stage); return bar(esc(x.label), sDone(x), sIx(x).length); }
+/* 区切りの目盛り（●＝正解ずみ）。20語の区切りは数字だけ */
+function chunkBar(){
+  if(!R.ck || R.kind !== 'stage') return '';
+  const left = sIx(stageById(R.stage)).filter(i => !sg(R.stage).done.includes(i) && !out(i)).length;
+  const n = Math.min(R.ck.size, R.ck.got + left);
+  if(n <= 1) return '';
+  return `<div class="ck"><span>区切り</span>${n <= 10 ? Array.from({length:n}, (_, k) => `<i class="${k < R.ck.got ? 'on' : ''}"></i>`).join('') : ''}<b>${R.ck.got}/${n}</b></div>`;
+}
 function kindBar(){
   if(R.mode === 'mock') return '';
   if(R.kind === 'check') return bar('きのうの確認', R.check.done.size, R.check.ix.length);
-  if(R.kind === 'stage') return stageBar();
+  if(R.kind === 'stage') return stageBar() + chunkBar();
   if(R.kind === 'sweep') return `<div class="sbar"><span>総ざらい（${R.sweepN}語）</span></div>`;
   if(R.kind === 'wrong') return bar('間違えた語', R.wset.done.size, R.wset.ix.length);
   if(R.kind === 'random') return `<div class="sbar"><span>乱取り・${randName()}（${myIdx().length}語）</span></div>`;
@@ -1096,9 +1240,11 @@ function afterAnswer(cur, ok){
   }
   if(R.mode === 'train' && R.kind === 'stage'){
     const g = sg(R.stage), x = stageById(R.stage);
-    if(ok){ if(!g.done.includes(cur.i)) g.done.push(cur.i); } else g.miss++;
+    if(ok){ if(!g.done.includes(cur.i)){ g.done.push(cur.i); if(R.ck) R.ck.got++; } } else { g.miss++; if(R.ck) R.ck.miss++; }
     save();
     if(g.done.length >= x.ix.length) return stageClear();
+    const left = sIx(x).filter(i => !g.done.includes(i) && !out(i)).length;
+    if(R.ck && R.ck.got >= R.ck.size && left > 0) return chunkDone();
   }
   show();
 }
@@ -1153,17 +1299,49 @@ function checkDone(){
   document.getElementById('nx').onclick = () => resume(left, nxt.kind, nxt.stage);
   document.getElementById('fin').onclick = () => result();
 }
+/* 区切りの終わり：大きさを決め直す。ノーミス→1つ大きく／2問以上まちがえた→5語に戻す */
+function closeChunk(){
+  const c = R.ck; R.ck = null;
+  if(!c || !c.got) return null;
+  const k = CHUNKS.indexOf(c.size);
+  const size = c.miss === 0 ? CHUNKS[Math.min(k + 1, CHUNKS.length - 1)] : c.miss >= 2 ? CHUNKS[0] : c.size;
+  S.chunk = size; save();
+  const msg = size > c.size ? `ノーミス！次は${size}語に挑戦` : size < c.size ? `次は${size}語ずつにして、確実に` : c.miss === 0 ? 'ノーミス！この調子' : `次も${size}語ずつ`;
+  return {got:c.got, miss:c.miss, size, msg};
+}
+/* 区切りを抜けた：判子を押して、続けるか聞く（タイマーは止める） */
+function chunkDone(){
+  stopTimer(); R.pausedAt = Date.now();
+  const c = closeChunk(), x = stageById(R.stage), left = Math.max(0, R.end - Date.now());
+  const rest = sIx(x).filter(i => !sg(x.id).done.includes(i)).length;
+  app.innerHTML = `<h1>区切りを突破</h1>
+    <div class="card center">
+      <div class="stamp big-stamp">${c.got}語<br>突破</div>
+      ${c.miss ? `<div>まちがい ${c.miss}回</div>` : ''}
+      <div class="goal" style="font-size:19px;margin-top:4px">${esc(c.msg)}</div>
+      <div style="margin-top:8px">${stageBar()}</div>
+      <div class="muted">${esc(x.label)}の残り ${rest}語</div>
+    </div>
+    <button class="btn" id="nx">続ける：${esc(x.label)}${left > 0 ? `<small>次は${c.size}語・残り ${clock()}</small>` : ''}</button>
+    <button class="btn sub" id="fin">今日はここまで</button>`;
+  document.getElementById('nx').onclick = () => resume(left, 'stage', x.id);
+  document.getElementById('fin').onclick = () => result();
+}
 /* ステージの残りが「明日覚える字」だけになった：次のステージへ進める */
 function stageRest(){
   stopTimer(); R.pausedAt = Date.now();
+  closeChunk();
   const x = stageById(R.stage), g = sg(R.stage), restIx = x.ix.filter(i => !g.done.includes(i)), rest = restIx.length;
-  const nLater = restIx.filter(isLater).length, nSkip = rest - nLater;
+  const mine = restIx.filter(i => sIx(x).includes(i));
+  const nOther = rest - mine.length, nLater = mine.filter(isLater).length, nSkip = mine.length - nLater;
+  const other = S.only === 'k' ? '読み' : '書き';
   const left = Math.max(0, R.end - Date.now()), nx = nextStage();
   app.innerHTML = `<h1>${esc(x.label)}は${nSkip ? '今日ここまで' : 'ここまで'}</h1>
     <div class="card center">
       <div class="big">${x.ix.length - rest}<small> / ${x.ix.length}語 正解</small></div>
       ${nSkip ? `<div class="muted">${nSkip}語は明日覚える語。明日いちばん先に出るよ</div>` : ''}
       ${nLater ? `<div class="muted">${nLater}語はあとまわし。あとまわしが残っている段は達成にならない</div>` : ''}
+      ${nOther ? `<div class="muted">${other}の${nOther}語が残っている（「ぜんぶ」か「${other}だけ」で出る）。ぜんぶ正解で段の達成</div>` : ''}
     </div>
     <button class="btn" id="nx">${nx ? `次へ：${esc(nx.label)}` : '次へ：復習の稽古'}${left > 0 ? `<small>残り ${clock()}</small>` : ''}</button>
     <button class="btn sub" id="fin">終わる</button>`;
@@ -1173,6 +1351,7 @@ function stageRest(){
 /* ステージクリア：タイマーを止めて祝う。続けるなら残り時間から再開 */
 function stageClear(){
   stopTimer(); R.pausedAt = Date.now();
+  const c = closeChunk();
   const x = stageById(R.stage), g = sg(R.stage);
   const first = !g.cleared;
   g.cleared = true; if(g.miss === 0) g.perfect = true; save();
@@ -1184,6 +1363,7 @@ function stageClear(){
       <div style="margin-top:6px">${x.ix.length}語 ぜんぶ正解</div>
       ${g.miss === 0 ? '<div class="goal">ノーミス。朱印「完」</div>' : `<div class="muted">間違い ${g.miss}回。次はノーミスで朱印「完」</div>`}
       ${first ? '' : '<div class="muted">（やり直しで達成）</div>'}
+      ${c ? `<div style="margin-top:4px">${esc(c.msg)}</div>` : ''}
       <div class="muted" style="margin-top:6px">正解した語は、明日の確認でもう一度思い出すと「覚えた」になる</div>
     </div>
     <button class="btn" id="nx">${nx ? `次へ：${esc(nx.label)}` : '次へ：復習の稽古'}${left > 0 ? `<small>残り ${clock()}</small>` : ''}</button>
@@ -1331,11 +1511,11 @@ function cardMenu(){
     </div>
     <button class="btn" id="allr">ぜんぶランダム<small>${randName()}・${myIdx().length}枚</small></button>
     <div class="sec">段ごと</div>
-    <div class="fuda">${myStages().map(x => `<button data-cs="${x.id}" aria-label="${esc(x.label)}"><span class="v">${esc(x.name)}</span><small>${x.ix.length}枚</small></button>`).join('')}</div>
+    <div class="fuda">${STAGES.map(x => `<button data-cs="${x.id}" aria-label="${esc(x.label)}"><span class="v">${esc(x.name)}</span><small>${sIx(x).length}枚</small></button>`).join('')}</div>
     <button class="btn sub" id="home">トップへ</button>`;
   document.querySelectorAll('#only button').forEach(b => b.onclick = () => { S.only = b.dataset.v; save(); cardMenu(); });
   document.getElementById('allr').onclick = () => cardView(shuffle(myIdx()), `${randName()}・ランダム`);
-  document.querySelectorAll('[data-cs]').forEach(b => b.onclick = () => { const x = stageById(b.dataset.cs); cardView(x.ix.slice(), x.label, true); });
+  document.querySelectorAll('[data-cs]').forEach(b => b.onclick = () => { const x = stageById(b.dataset.cs); cardView(sIx(x), x.label, true); });
   document.getElementById('home').onclick = home;
   document.getElementById('home2').onclick = home;
 }
@@ -1382,12 +1562,13 @@ function cardView(ix, title, canMix){
 /* 手引き（使い方の説明） */
 function manual(){
   clearFx(); window.scrollTo(0, 0);
-  const sec = (n, title, body, open) => `<details class="mn"${open ? ' open' : ''}><summary><span class="mn-n">${kn(n)}</span>${title}</summary><div class="mn-b">${body}</div></details>`;
+  let no = 0;   // 番号は並んだ順に振る（書いた順＝表示の順）
+  const sec = (_, title, body, open) => `<details class="mn"${open ? ' open' : ''}><summary><span class="mn-n">${kn(++no)}</span>${title}</summary><div class="mn-b">${body}</div></details>`;
   app.innerHTML = `<div class="top"><h1>手引き</h1><button class="btn sub mini" id="home2">トップへ</button></div>
     <div class="note" style="text-align:left">見出しを押すと開く。</div>
     ${sec(1, '毎日の流れ', `
-      <p><b>▶ を押すだけでいい。</b>2日目からは、最初に「きのうの確認」（前の日までに出た語を最大10語）が出て、そのあと段の続きに進む。</p>
-      <p>時間は −／＋ で1〜30分。時間になったら「もう1・3・5分」か「終わる」を選ぶ。1日1分でも「やった日」になる。</p>
+      <p><b>トップの赤いボタン「今日の稽古をはじめる」を押すだけでいい。</b>何を出すかはアプリが決める。2日目からは、最初に「きのうの確認」（前の日までに出た語を最大10語）が出て、そのあと段の続きに進む。</p>
+      <p>出す語（ぜんぶ／書きだけ／読みだけ）・時間（1〜30分）・目標は、赤いボタンの下の「変える」から。時間になったら「もう1・3・5分」か「終わる」を選ぶ。1日1分でも「やった日」になる。</p>
       <p>前の晩にまとめてやるより、毎日少しずつのほうが忘れにくい。2日目からは速くなる。</p>`, true)}
     ${sec(2, '「覚えた」になるのはいつ？', `
       <p><b>別の日に2回つづけて正解したとき。</b></p>
@@ -1400,35 +1581,39 @@ function manual(){
       <p>記録は先生も見ない。甘く採点して損するのは自分だけ。</p>`)}
     ${sec(4, '読みの答え方', `<p>線の部分の読みを、ひらがなで入力して「こたえる」。カタカナで打っても正解になる。分からなければ「わからない」。</p>`)}
     ${sec(5, '段（ステージ）と朱印「完」', `
-      <p>範囲を約20語ずつに分けた「段」がある（書き八段・読み四段）。段の語にぜんぶ1回ずつ正解すると<b>達成</b>。1回も間違えずに達成すると朱印<b>「完」</b>。</p>
-      <p>札を押すとその段から始められる。達成した段を押すと0からやり直し（達成の記録は残る）。</p>`)}
+      <p>範囲を20語ずつに分けた「段」がある（${STAGES.length}段・最後の段だけ${STAGES[STAGES.length - 1].ix.length}語）。どの段も<b>書きと読みが混ざっている</b>（本番の20問に近い形）。「書きだけ」にすると、段の中の書きだけが出る。</p>
+      <p>段の語にぜんぶ1回ずつ正解すると<b>達成</b>。1回も間違えずに達成すると朱印<b>「完」</b>。札を押すとその段から始められる。達成した段を押すと0からやり直し（達成の記録は残る）。</p>
+      <p><b>区切り</b>：段の中は小さな区切りで進む。最初は<b>5語</b>。区切りをノーミスで抜けると次は<b>10語</b>、さらに抜けると段の<b>20語を一気に</b>。2問まちがえたら5語に戻る。区切りごとに「続ける／今日はここまで」を選べる。</p>`)}
     ${sec(6, '間違えたとき', `
       <ul><li><b>復活戦</b>：間違えた語は3問あとにもう一度出る</li>
       <li><b>5回つづけて×</b>：「次は行ける！」か「今日はスキップ（明日覚える）」を選べる。スキップした語は次の日に<b>リベンジ</b>としていちばん先に出る</li></ul>`)}
-    ${sec(13, 'あとまわし（捨てる語）', `<p>どうしても覚えられない語は「あとまわし」にできる。5回つづけて×のときの画面か、図鑑で語を押して決める（図鑑から戻すこともできる）。</p>
+    ${sec(7, 'あとまわし（捨てる語）', `<p>どうしても覚えられない語は「あとまわし」にできる。5回つづけて×のときの画面か、図鑑で語を押して決める（図鑑から戻すこともできる）。</p>
       <ul><li>きのうの確認・段・乱取り・間違えた語・復習・総ざらいには出ない</li><li><b>本番模試とめくり札には出る</b>（本番に出るかもしれないのは変わらない）</li>
       <li>あとまわしが残っている段は<b>達成にならない</b></li><li>ほかの語がぜんぶ「覚えた」になったら、戻すか聞く</li></ul>`)}
-    ${sec(7, '乱取り・間違えた語', `
+    ${sec(8, '乱取り・間違えた語', `
       <p><b>乱取り</b>：選んでいる種類（ぜんぶ／書きだけ／読みだけ）の語をランダムに出す。</p>
       <p><b>間違えた語</b>：間違えた語だけを出す。<b>その日の最初の答えで正解すると外れる</b>（間違えてから正解しただけでは外れない。次の日の最初に正解すれば外れる）。</p>`)}
-    ${sec(12, 'めくり札', `<p>採点しないで、めくって見るだけのカード。段ごとか、ぜんぶランダムで。カードを押すと答え、左右にスワイプか「次へ」でめくる。「いつも答えも出す」で両面を一度に見られる。電車の中や、友だちと出し合うときに。<b>記録には残らない</b>（「覚えた」にはならない）。</p>`)}
-    ${sec(8, '本番模試', `
+    ${sec(9, 'めくり札', `<p>採点しないで、めくって見るだけのカード。段ごとか、ぜんぶランダムで。カードを押すと答え、左右にスワイプか「次へ」でめくる。「いつも答えも出す」で両面を一度に見られる。電車の中や、友だちと出し合うときに。<b>記録には残らない</b>（「覚えた」にはならない）。</p>`)}
+    ${sec(10, '本番模試', `
       <p>本番と同じ20問（書き${TEST.mockKaki}・読み${TEST.mockYomi}）を10分で。文の中の線の部分を答える（意味は出ない）。</p>
       <ul><li><b>紙で解く</b>：一覧を見てノートに書く → 答え合わせで1問ずつ正解／不正解</li>
       <li><b>スマホで解く</b>：1問ずつ答えて採点。0:00で終わり、解けなかった問題は0点</li></ul>
       <p>いちばんよかった点が「最高点」になる。間違えた語は次の日の確認に出る。</p>`)}
-    ${sec(9, '本番の前日と当日', `<p>▶が<b>総ざらい</b>になる。これまでに正解した語を、苦手・古い順にぜんぶ出す。新しい段より、覚えた語を確かめるほうが点になる。前の晩はちゃんと寝る。</p>`)}
-    ${sec(10, 'トップの数字の意味', `
+    ${sec(11, '本番の前日と当日', `<p>▶が<b>総ざらい</b>になる。これまでに正解した語を、苦手・古い順にぜんぶ出す。新しい段より、覚えた語を確かめるほうが点になる。前の晩はちゃんと寝る。</p>`)}
+    ${sec(12, 'トップの数字の意味', `
       <ul><li><b>達成度</b>：1回でも正解したことのある語の割合（書き・読み別）。下がらない</li>
       <li><b>うち覚えた</b>：メーターの濃い帯。別の日に2回つづけて正解した語</li>
       <li><b>最高点</b>：本番模試のいちばんよかった点。赤い線が自分の目標</li>
       <li><b>やった日</b>：本番までに練習した日の数。休んでも0に戻らない。■は「きのうの確認」までやった日</li></ul>
+      <p>トップの記録は<b>見るだけ</b>（押しても何も起きない）。押せるところには影と「›」がある。</p>
       <p><b>図鑑</b>の色：墨＝覚えた／金の枠＝あと少し／朱＝苦手（間違えた語）／白＝まだ。</p>`)}
-    ${sec(11, '記録について', `
+    ${sec(13, '記録について', `
       <ul><li>記録はこのスマホの、このブラウザの中だけに残る。名前もログインもない。先生も見ない</li>
       <li>いつも同じ開き方で開く。<b>ホーム画面に追加</b>して、アイコンから開くのがおすすめ（LINEの中で開くと記録が別になることがある）</li>
-      <li>目標点と「何日やるか」は、トップの「目標を変える」でいつでも変えられる</li></ul>`)}
+      <li>目標点と「何日やるか」は、赤いボタンの下の「変える」→「目標を変える」でいつでも変えられる</li></ul>`)}
+    <button class="btn sub" id="trial2">お試し2問をもう一度<small>書き1問・読み1問を説明つきで（記録には残らない）</small></button>
     <button class="btn" id="home">トップへ</button>`;
+  document.getElementById('trial2').onclick = () => trial(0);
   document.getElementById('home').onclick = home;
   document.getElementById('home2').onclick = home;
 }
