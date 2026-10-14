@@ -42,6 +42,8 @@ h1{font-size:22px;margin:4px 0 2px}
 .meter .pass{position:absolute;top:-24px;bottom:-4px;border-left:3px dashed var(--ng)}
 .meter .pass span{position:absolute;top:0;left:4px;font-size:12px;color:var(--ng);white-space:nowrap;font-weight:700}
 .big{font-size:40px;font-weight:800;line-height:1.1}
+.meter.thin{height:12px;margin:10px 0 4px}
+.meter .fill.ok{background:var(--ok)}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
 .stats b{display:block;font-size:22px}
 .stats span{font-size:12px;color:var(--sub)}
@@ -404,17 +406,9 @@ function level(i){
   if(s.streak === 1) return 1;
   return 0;
 }
-/* 予想点：書き・読みそれぞれの仕上がり（覚えた＝1・あと少し＝0.5）を、本番の問題数の割合で合わせる */
-function predicted(){
-  const part = t => {
-    const idx = QUESTIONS.map((q, i) => q.t === t ? i : -1).filter(i => i >= 0);
-    if(!idx.length) return 0;
-    let v = 0; idx.forEach(i => { const l = level(i); v += l === 2 ? 1 : l === 1 ? 0.5 : 0; });
-    return v / idx.length;
-  };
-  const n = TEST.mockKaki + TEST.mockYomi;
-  return Math.round(TEST.full * (part('k') * TEST.mockKaki + part('y') * TEST.mockYomi) / n);
-}
+/* 達成度：範囲の語のうち、1回でも正解したことのある語の割合（％）。下がらない数字にしてある */
+function achieved(){ return QUESTIONS.filter((_, i) => S.items[i] && S.items[i].ok > 0).length; }
+function achievedPct(){ return Math.floor(achieved() / QUESTIONS.length * 100); }
 function mastered(){ return QUESTIONS.filter((_, i) => level(i) === 2).length; }
 function almost(){ return QUESTIONS.filter((_, i) => level(i) === 1).length; }
 function today(){ const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -474,19 +468,23 @@ function stopTimer(){ if(timerId){ clearInterval(timerId); timerId = null; } }
 
 function home(){
   stopTimer();
-  const p = predicted(), left = daysLeft(), m = mastered(), nx = nextStage();
+  const ap = achievedPct(), best = S.mockBest, left = daysLeft(), m = mastered(), nx = nextStage();
   if(S.goal == null) return goalScreen(true);
   const G = goal(), passPct = Math.min(100, G / TEST.full * 100);
-  const msg = p >= G ? '🎯 目標突破圏！ このまま固めよう'
-            : `目標まで あと <b>${G - p}点</b>`;
+  const msg = best === null ? '本番模試で最高点をつくろう'
+            : best >= G ? '🎯 目標達成！ 次は目標を上げてみる？'
+            : `目標まで あと <b>${G - best}点</b>`;
   app.innerHTML = `
     <h1>常漢勝つぞ</h1>
     <div class="muted">${esc(TEST.title)}（${esc(TEST.range || '')}）<br>${left > 0 ? `本番まで あと<b>${left}日</b>` : left === 0 ? '<b>今日が本番！</b>' : '本番は終わりました'}</div>
     ${TEST.sample ? '<div class="banner">いまはサンプル問題です。本番の範囲はもうすぐ入ります。</div>' : ''}
     <div class="card">
-      <div class="muted">いまの予想点（${TEST.full}点満点）</div>
-      <div class="big">${p}<span style="font-size:20px">点</span></div>
-      <div class="meter"><div class="fill" style="width:${p / TEST.full * 100}%"></div>
+      <div class="muted">達成度（1回でも正解した語 ${achieved()}/${QUESTIONS.length}）</div>
+      <div class="big">${ap}<span style="font-size:20px">%</span></div>
+      <div class="meter thin"><div class="fill ok" style="width:${ap}%"></div></div>
+      <div class="muted" style="margin-top:14px">最高点（本番模試・${TEST.full}点満点）</div>
+      <div class="big">${best === null ? '—' : best}<span style="font-size:20px">${best === null ? '' : '点'}</span></div>
+      <div class="meter"><div class="fill" style="width:${(best || 0) / TEST.full * 100}%"></div>
         <div class="pass" style="left:${passPct}%"><span${passPct > 70 ? ' style="left:auto;right:6px"' : ''}>🎯 目標 ${G}点</span></div></div>
       <div class="row" style="align-items:center"><div style="flex:1">${msg}</div>
         <button class="btn sub" id="goal" style="width:auto;flex:none;margin:0;padding:8px 12px;font-size:14px">目標を変える</button></div>
@@ -594,7 +592,7 @@ function setStage(id, random){   // id=null で復習モード／random=true で
 
 let R = null;   // 実行中の回
 function startRun(mode, stageId, random){
-  const before = predicted();
+  const before = achievedPct();
   R = {mode, stage:null, clears:[], queue: mode === 'train' ? [] : mockQueue().map(i => ({i, revive:false})),
        pos:0, counted:new Set(), right:0, total:0, combo:0, maxCombo:0, before, masteredBefore: mastered(),
        end: Date.now() + S.min * 60000, minutes: S.min, timeUp:false};
@@ -823,7 +821,7 @@ function askExtend(){
 }
 function result(){
   stopTimer();
-  const after = predicted(), gained = mastered() - R.masteredBefore;
+  const after = achievedPct(), gained = mastered() - R.masteredBefore;
   let body = '';
   if(R.mode === 'mock'){
     const score = Math.round(TEST.full * R.right / Math.max(1, R.queue.length));
@@ -847,9 +845,9 @@ function result(){
       ${R.stage && !sg(R.stage).cleared ? `<div style="margin-top:6px">${stageBar()}</div><div class="muted">続きは次の回から</div>` : ''}
       <div style="margin-top:8px">覚えた <b>${mastered()}</b>字（${gained >= 0 ? '+' : ''}${gained}）・あと少し <b>${almost()}</b>字</div>
       <div class="muted">あと少しの字は、次の回でも正解すると「覚えた」になる</div>
-      <div>予想点 ${R.before}点 → <b>${after}点</b></div>
-      ${after >= goal() && R.before < goal() ? '<div class="goal pop">🎯 予想点が目標を越えた！</div>' : ''}`;
-    if(after >= goal() && R.before < goal()) confetti();
+      <div>達成度 ${R.before}% → <b>${after}%</b>${after > R.before ? ` <span class="goal" style="font-size:16px">+${after - R.before}</span>` : ''}</div>
+      ${after === 100 && R.before < 100 ? '<div class="goal pop">🎉 範囲の語をぜんぶ1回は正解した！</div>' : ''}`;
+    if(after === 100 && R.before < 100) confetti();
   }
   app.innerHTML = `<h1>おつかれさま！</h1><div class="card center">${body}</div>
     <button class="btn" id="home">トップへ</button>`;
