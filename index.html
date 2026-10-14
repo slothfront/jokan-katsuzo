@@ -164,6 +164,24 @@ input.ans::placeholder{color:var(--sub);font-size:18px}
 .confetti i{position:absolute;top:-20px;width:9px;height:14px;animation:fall linear forwards}
 @keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
 .hidden{display:none}
+/* 手引き */
+.tebiki{display:flex;align-items:center;gap:12px;width:100%;margin:14px 0 4px;padding:10px 14px 10px 10px;background:var(--card);color:var(--ink);border:1.5px solid var(--ink);border-left:8px solid var(--ink);cursor:pointer;font:inherit;text-align:left;min-height:56px}
+.tebiki:active{transform:translateY(1px)}
+.tb-mark{flex:none;writing-mode:vertical-rl;font-family:"Noto Serif JP",serif;font-weight:900;font-size:13px;letter-spacing:.15em;background:var(--shu);color:var(--on-shu);padding:6px 3px}
+.tb-txt{flex:1}
+.tb-txt b{display:block;font-family:"Noto Serif JP",serif;font-weight:900;font-size:18px;letter-spacing:.12em}
+.tb-txt small{color:var(--sub);font-size:12px}
+.tb-arrow{font-size:26px;color:var(--sub)}
+.mn{border:1.5px solid var(--ink);background:var(--card);margin:8px 0}
+.mn summary{list-style:none;cursor:pointer;padding:12px 14px;font-family:"Noto Serif JP",serif;font-weight:900;font-size:16px;display:flex;align-items:center;gap:10px;min-height:44px}
+.mn summary::-webkit-details-marker{display:none}
+.mn summary:after{content:"＋";margin-left:auto;color:var(--sub);font-weight:700}
+.mn[open] summary:after{content:"－"}
+.mn-n{flex:none;width:30px;height:30px;border-radius:50%;background:var(--shu);color:var(--on-shu);display:inline-flex;align-items:center;justify-content:center;font-size:11px;letter-spacing:-.08em}
+.mn-b{padding:0 14px 12px;border-top:1px solid var(--hair);font-size:15px;line-height:1.75}
+.mn-b p{margin:10px 0 0}
+.mn-b ul{margin:8px 0 0;padding-left:1.2em}
+.mn-b li{margin:4px 0}
 
 /* 書きの答え：1字ずつの枠と拡大 */
 .chars{display:flex;justify-content:center;align-items:flex-end;gap:6px;margin:6px 0 4px;flex-wrap:wrap}
@@ -757,6 +775,7 @@ function home(){
       <div><b>${mastered('y')}</b><span>覚えた・読み</span></div>
       <div><b>${S.mockBest === null ? '—' : S.mockBest + '点'}</b><span>模試最高</span></div>
     </div>
+    <button class="tebiki" id="manual"><span class="tb-mark">手引</span><span class="tb-txt"><b>手引き</b><small>使い方・「覚えた」などの意味</small></span><span class="tb-arrow">›</span></button>
     <p class="note">記録はこのスマホの中だけに残ります。</p>`;
   document.querySelectorAll('#only button').forEach(b => b.onclick = () => { S.only = b.dataset.v; save(); home(); });
   const setMin = d => { S.min = Math.min(30, Math.max(1, S.min + d)); save(); home(); };
@@ -774,6 +793,7 @@ function home(){
   document.getElementById('mock').onclick = mockChoose;
   document.getElementById('zukan').onclick = zukan;
   document.getElementById('goal').onclick = () => goalScreen(false);
+  document.getElementById('manual').onclick = manual;
 }
 /* 2日以上あいて開いたとき */
 function welcome(){
@@ -1241,6 +1261,55 @@ function result(quit){
   document.getElementById('home').onclick = home;
   document.getElementById('again').onclick = () => wasMock ? mockChoose() : startTrain(goPlan());
   R = null;
+}
+/* 手引き（使い方の説明） */
+function manual(){
+  clearFx(); window.scrollTo(0, 0);
+  const sec = (n, title, body, open) => `<details class="mn"${open ? ' open' : ''}><summary><span class="mn-n">${kn(n)}</span>${title}</summary><div class="mn-b">${body}</div></details>`;
+  app.innerHTML = `<div class="top"><h1>手引き</h1><button class="btn sub mini" id="home2">トップへ</button></div>
+    <div class="note" style="text-align:left">見出しを押すと開く。</div>
+    ${sec(1, '毎日の流れ', `
+      <p><b>▶ を押すだけでいい。</b>2日目からは、最初に「きのうの確認」（前の日までに出た語を最大10語）が出て、そのあと段の続きに進む。</p>
+      <p>時間は −／＋ で1〜30分。時間になったら「もう1・3・5分」か「終わる」を選ぶ。1日1分でも「やった日」になる。</p>
+      <p>前の晩にまとめてやるより、毎日少しずつのほうが忘れにくい。2日目からは速くなる。</p>`, true)}
+    ${sec(2, '「覚えた」になるのはいつ？', `
+      <p><b>別の日に2回つづけて正解したとき。</b></p>
+      <ul><li>1日目に正解 →「あと少し」</li><li>次の日以降にもう一度正解 →「覚えた」</li>
+      <li>同じ日に何回正解しても1日分。あいだで1回でも間違えると数え直し</li></ul>
+      <p>一度「覚えた」になった語は、トップの数（うち覚えた）から減らない。</p>`, true)}
+    ${sec(3, '書きの採点のしかた', `
+      <p>カタカナと意味を見て、頭の中で（書ける場所なら指や紙に）書く →「答えを見る」→ 自分で「正解／不正解」を押す。</p>
+      <p><b>1字ずつ見て、とめ・はね・送りがなまで同じなら正解。1画でも迷ったら不正解。</b>不正解にしても3問あとにもう一度出るから損はない。字を押すと大きく見られる。</p>
+      <p>記録は先生も見ない。甘く採点して損するのは自分だけ。</p>`)}
+    ${sec(4, '読みの答え方', `<p>線の部分の読みを、ひらがなで入力して「こたえる」。カタカナで打っても正解になる。分からなければ「わからない」。</p>`)}
+    ${sec(5, '段（ステージ）と朱印「完」', `
+      <p>範囲を約20語ずつに分けた「段」がある（書き八段・読み四段）。段の語にぜんぶ1回ずつ正解すると<b>達成</b>。1回も間違えずに達成すると朱印<b>「完」</b>。</p>
+      <p>札を押すとその段から始められる。達成した段を押すと0からやり直し（達成の記録は残る）。</p>`)}
+    ${sec(6, '間違えたとき', `
+      <ul><li><b>復活戦</b>：間違えた語は3問あとにもう一度出る</li>
+      <li><b>5回つづけて×</b>：「次は行ける！」か「今日はスキップ（明日覚える）」を選べる。スキップした語は次の日に<b>リベンジ</b>としていちばん先に出る</li></ul>`)}
+    ${sec(7, '乱取り・間違えた語', `
+      <p><b>乱取り</b>：選んでいる種類（ぜんぶ／書きだけ／読みだけ）の語をランダムに出す。</p>
+      <p><b>間違えた語</b>：間違えた語だけを出す。<b>その日の最初の答えで正解すると外れる</b>（間違えてから正解しただけでは外れない。次の日の最初に正解すれば外れる）。</p>`)}
+    ${sec(8, '本番模試', `
+      <p>本番と同じ20問（書き${TEST.mockKaki}・読み${TEST.mockYomi}）を10分で。書きに意味は出ない。</p>
+      <ul><li><b>紙で解く</b>：一覧を見てノートに書く → 答え合わせで1問ずつ正解／不正解</li>
+      <li><b>スマホで解く</b>：1問ずつ答えて採点。0:00で終わり、解けなかった問題は0点</li></ul>
+      <p>いちばんよかった点が「最高点」になる。間違えた語は次の日の確認に出る。</p>`)}
+    ${sec(9, '本番の前日と当日', `<p>▶が<b>総ざらい</b>になる。これまでに正解した語を、苦手・古い順にぜんぶ出す。新しい段より、覚えた語を確かめるほうが点になる。前の晩はちゃんと寝る。</p>`)}
+    ${sec(10, 'トップの数字の意味', `
+      <ul><li><b>達成度</b>：1回でも正解したことのある語の割合（書き・読み別）。下がらない</li>
+      <li><b>うち覚えた</b>：メーターの濃い帯。別の日に2回つづけて正解した語</li>
+      <li><b>最高点</b>：本番模試のいちばんよかった点。赤い線が自分の目標</li>
+      <li><b>やった日</b>：本番までに練習した日の数。休んでも0に戻らない。■は「きのうの確認」までやった日</li></ul>
+      <p><b>図鑑</b>の色：墨＝覚えた／金の枠＝あと少し／朱＝苦手（間違えた語）／白＝まだ。</p>`)}
+    ${sec(11, '記録について', `
+      <ul><li>記録はこのスマホの、このブラウザの中だけに残る。名前もログインもない。先生も見ない</li>
+      <li>いつも同じ開き方で開く。<b>ホーム画面に追加</b>して、アイコンから開くのがおすすめ（LINEの中で開くと記録が別になることがある）</li>
+      <li>目標点と「何日やるか」は、トップの「目標を変える」でいつでも変えられる</li></ul>`)}
+    <button class="btn" id="home">トップへ</button>`;
+  document.getElementById('home').onclick = home;
+  document.getElementById('home2').onclick = home;
 }
 function zukan(){
   clearFx();
