@@ -229,6 +229,18 @@ input.ans::placeholder{color:var(--sub);font-size:18px}
 .ck i{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--ink)}
 .ck i.on{background:var(--shu);border-color:var(--shu)}
 .ck b{margin-left:6px;color:var(--ink)}
+/* 段のシート：区切りを選ぶ */
+.sh-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;border-bottom:1px solid var(--hair);padding-bottom:8px}
+.sh-h b{font-family:"Noto Serif JP",serif;font-weight:900;font-size:22px;letter-spacing:.08em}
+.sh-h span{font-size:13px;color:var(--sub)}
+.grps{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-top:6px;padding-bottom:3px}
+.grps button{border:1.5px solid var(--ink);background:var(--card);color:var(--ink);border-radius:8px;padding:10px 4px;min-height:60px;cursor:pointer;font:inherit;box-shadow:0 3px 0 var(--ink)}
+.grps button b{display:block;font-family:"Noto Serif JP",serif;font-weight:900;font-size:16px}
+.grps button small{font-size:12px;color:var(--sub)}
+.grps button.clr{background:var(--ink);color:var(--on-ink)}
+.grps button.clr small{color:var(--on-ink);opacity:.8}
+.grps button:active{transform:translateY(3px);box-shadow:none}
+.sheet-in{max-height:88dvh;overflow-y:auto}
 /* お試しの吹き出し */
 .coach{display:flex;gap:10px;align-items:flex-start;background:var(--shu-bg);border-left:4px solid var(--shu);padding:10px 12px;margin:12px 0 4px;font-size:15px;line-height:1.6}
 .coach .cn{flex:none;width:24px;height:24px;border-radius:50%;background:var(--shu);color:var(--on-shu);display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:900}
@@ -574,6 +586,14 @@ const stageById = id => STAGES.find(x => x.id === id);
 const sIx = x => x.ix.filter(i => S.only === 'all' || QUESTIONS[i].t === S.only);
 const sDone = x => sIx(x).filter(i => sg(x.id).done.includes(i)).length;
 if(!CHUNKS.includes(S.chunk)) S.chunk = CHUNKS[0];         // いまの区切りの大きさ
+/* 区切り：段の中（いま選んでいる種類の語）を5語前後ずつに分ける。20語→5・5・5・5、14語→5・4・5、6語→6 */
+function groupsOf(x){
+  const ix = sIx(x), n = Math.max(1, Math.round(ix.length / 5)), out = [];
+  for(let k = 0; k < n; k++) out.push(ix.slice(Math.round(ix.length * k / n), Math.round(ix.length * (k + 1) / n)));
+  return out;
+}
+const groupsPer = size => size >= 20 ? 99 : size >= 10 ? 2 : 1;   // 区切りの大きさ→いくつの区切りをまとめて出すか
+if(!S.rnd) S.rnd = {};                                    // 乱取りの「まだ出ていない語」{all／k／y: [問題番号]}（一周するまで持ち越す）
 /* 目標：生徒が自分で決める（合格点〜満点・5点きざみ）。未設定なら最初に聞く */
 const clampGoal = g => Math.min(TEST.full, Math.max(TEST.pass, Math.round(g / TEST.goalStep) * TEST.goalStep));
 const goal = () => clampGoal(S.goal || TEST.pass);
@@ -708,11 +728,28 @@ function trainQueue(){
 }
 /* ステージ：まだ正解していない語をシャッフル */
 function stageQueue(id){
-  const g = sg(id);
-  return revengeFirst(shuffle(sIx(stageById(id)).filter(i => !g.done.includes(i) && !out(i))));
+  const g = sg(id), pool = R && R.ck && R.ck.stage === id ? ckWords() : sIx(stageById(id));
+  return revengeFirst(shuffle(pool.filter(i => !g.done.includes(i) && !out(i))));
+}
+/* いまの区切りの語 */
+function ckWords(){ const c = R.ck; return groupsOf(stageById(c.stage)).slice(c.from, c.from + c.n).flat(); }
+/* 区切りを始める：まだ正解していない語が残る最初の区切りから（選んだ区切りがあればそこ） */
+function newChunk(stageId, group){
+  const gs = groupsOf(stageById(stageId)), done = sg(stageId).done;
+  const open = k => gs[k].some(i => !done.includes(i) && !out(i));
+  const from = group != null ? group : Math.max(0, gs.findIndex((_, k) => open(k)));
+  return {stage:stageId, from: R.whole ? 0 : from, n: R.whole ? 99 : R.fixed ? 1 : groupsPer(S.chunk), size:S.chunk, got:0, miss:0};
 }
 function wrongQueue(){ return revengeFirst(wrongIdx().sort(byOld)); }
-function randomQueue(){ return revengeFirst(shuffle(myIdx().filter(i => !out(i)))); }
+/* 乱取り：一周するまで「まだ出ていない語」を持ち越す（ぜんぶ／書き／読みで別々） */
+function rndAll(){ return myIdx().filter(i => !isLater(i)); }
+function rndLeft(){
+  const all = rndAll(), set = new Set(all);
+  let r = (S.rnd[S.only] || []).filter(i => set.has(i));
+  if(!S.rnd[S.only]) r = shuffle(all.slice());
+  S.rnd[S.only] = r; return r;
+}
+function randomQueue(){ return revengeFirst(rndLeft().filter(i => !out(i))); }
 function randName(){ return ({all:'ぜんぶ', k:'書き', y:'読み'})[S.only]; }
 /* 本番模試：本番と同じく書き15問・読み5問（範囲が足りなければある分だけ） */
 function mockQueue(){
@@ -727,14 +764,15 @@ function refill(){
   return more.length ? more : trainQueue();
 }
 /* 回の中身を切り替える：check／stage／review／random／sweep */
-function setKind(kind, stageId){
+function setKind(kind, stageId, group){
   R.kind = kind; R.stage = kind === 'stage' ? stageId : null;
-  if(kind === 'stage' && !(R.ck && R.ck.stage === stageId)) R.ck = {stage:stageId, size:S.chunk, got:0, miss:0};   // 区切りを始める
+  if(kind === 'stage' && !(R.ck && R.ck.stage === stageId)) R.ck = newChunk(stageId, group);   // 区切りを始める
   if(kind !== 'stage') R.ck = null;
   const q = kind === 'check' ? R.check.ix.slice()
           : kind === 'stage' ? stageQueue(stageId)
           : kind === 'random' ? randomQueue()
           : kind === 'wrong' ? R.wset.ix.slice()
+          : kind === 'redo' ? shuffle(R.gset.ix.filter(i => !out(i)))
           : kind === 'sweep' ? sweepPool()
           : trainQueue();
   R.queue = q.map(i => ({i, revive:false})); R.pos = 0;
@@ -825,12 +863,12 @@ function home(){
     <div class="fuda">${STAGES.map(x => { const g = sg(x.id), n = sIx(x).length, d = sDone(x), nl = sIx(x).filter(isLater).length;
       return `<button data-st="${x.id}" class="${g.cleared ? 'clr' : ''}${nx && nx.id === x.id ? ' now' : ''}" aria-label="${esc(x.name)}">
         <span class="v">${esc(x.name)}</span><small>${g.cleared ? '達成' : `${d}/${n}`}${nl && !g.cleared ? `<br>後${nl}` : ''}</small>${g.perfect ? '<span class="seal">完</span>' : ''}</button>`; }).join('')}</div>
-    <div class="note">${nx ? `段＝20語のまとまり（書きと読みが混ざる${S.only === 'all' ? '' : `。いまは${S.only === 'k' ? '書き' : '読み'}だけ出す`}）<br>朱の「完」＝ノーミスで達成。達成した段を押すと0からやり直し` : 'ぜんぶの段を達成。いまは苦手な語から出る復習の稽古'}</div>
+    <div class="note">${nx ? `段＝20語のまとまり（書きと読みが混ざる${S.only === 'all' ? '' : `。いまは${S.only === 'k' ? '書き' : '読み'}だけ出す`}）<br>札を押すと区切り（5語ずつ）を選べる。朱の「完」＝ノーミスで達成` : 'ぜんぶの段を達成。いまは苦手な語から出る復習の稽古'}</div>
     ${tSkip ? `<div class="note">今日は${tSkip}語を明日にまわした</div>` : ''}
     ${nLat ? `<div class="note">あとまわし${nLat}語（練習には出ない・模試とめくり札には出る。図鑑で戻せる）</div>` : ''}
     <div class="sec">ほかの稽古</div>
     <div class="navs">
-      ${nav('rand', '乱取り', `${myIdx().length}語をランダムに`)}
+      ${nav('rand', '乱取り', `${randName()} 残り${rndLeft().length}語（${rndAll().length}語）`)}
       ${nav('wrong', '間違えた語', wrongIdx().length ? `${randName()}・${wrongIdx().length}語` : 'いまは0語', !wrongIdx().length)}
       ${nav('mock', '本番模試', '20問・10分')}
       ${nav('zukan', '図鑑', '語の一覧・あとまわし')}
@@ -845,15 +883,76 @@ function home(){
   homeDay = today();
   document.getElementById('rand').onclick = () => startTrain({kind:'random'});
   document.getElementById('wrong').onclick = () => startTrain({kind:'wrong'});
-  document.querySelectorAll('[data-st]').forEach(b => b.onclick = () => {
-    const g = sg(b.dataset.st);
-    if(g.cleared){ g.done = []; g.miss = 0; save(); }   // 達成済みはやり直し（達成の記録は残す）
-    startTrain({kind:'stage', stage:b.dataset.st});
-  });
+  document.querySelectorAll('[data-st]').forEach(b => b.onclick = () => stageSheet(b.dataset.st));
   document.getElementById('mock').onclick = mockChoose;
   document.getElementById('zukan').onclick = zukan;
   document.getElementById('manual').onclick = manual;
   document.getElementById('cards').onclick = cardMenu;
+}
+/* 段を押したとき：段まるごと／区切りを選ぶ */
+function stageSheet(id){
+  document.querySelectorAll('.sheet').forEach(x => x.remove());
+  const x = stageById(id), g = sg(id), gs = groupsOf(x), open = stageOpen(x);
+  const box = document.createElement('div'); box.className = 'sheet';
+  box.innerHTML = `<div class="sheet-in card">
+      <div class="sh-h"><b>${esc(x.label)}</b><span>${g.cleared ? '達成' : `${sDone(x)} / ${sIx(x).length}語 正解ずみ`}${g.perfect ? '・朱印「完」' : ''}</span></div>
+      ${open && !g.cleared ? `<button class="btn" id="cont">${esc(x.label)}を続ける<small>区切りは${S.chunk}語ずつ（ノーミスで大きくなる）</small></button>` : ''}
+      ${open ? `<button class="btn sub" id="whole">${sIx(x).length}語まとめて<small>区切らずに、段をぜんぶ一気に</small></button>` : ''}
+      <div class="cap" style="margin-top:12px">区切りを選ぶ（${gs.length > 1 ? '5語ずつ' : 'この段は1つ'}）</div>
+      <div class="grps">${gs.map((w, k) => { const d = w.filter(i => g.done.includes(i)).length, all = d >= w.length;
+        return `<button data-g="${k}" class="${all ? 'clr' : ''}"><b>区切り${kn(k + 1)}</b><small>${all ? '済・もう一度' : `${d}/${w.length}`}</small></button>`; }).join('')}</div>
+      <div class="note" style="text-align:left">済の区切りは、その5語だけをもう一度できる（段の進み具合は変わらない）</div>
+      ${g.cleared || g.done.length ? `<button class="btn sub" id="reset">${esc(x.label)}を0からやり直す<small>${g.cleared ? '達成と朱印の記録は残る' : '正解ずみを消して最初から'}</small></button>` : ''}
+      <button class="btn sub" id="sclose">やめる</button></div>`;
+  document.body.appendChild(box);
+  const go = plan => { box.remove(); startTrain(plan); };
+  box.onclick = e => { if(e.target === box) box.remove(); };
+  if(box.querySelector('#cont')) box.querySelector('#cont').onclick = () => go({kind:'stage', stage:id});
+  if(box.querySelector('#whole')) box.querySelector('#whole').onclick = () => go({kind:'stage', stage:id, whole:true});
+  box.querySelectorAll('[data-g]').forEach(b => b.onclick = () => {
+    const k = +b.dataset.g, w = gs[k];
+    if(w.some(i => !g.done.includes(i) && !out(i))) return go({kind:'stage', stage:id, group:k});
+    const ix = w.filter(i => !out(i));
+    if(ix.length) go({kind:'redo', ix, label:`${x.label}・区切り${kn(k + 1)}`, stage:id});
+  });
+  if(box.querySelector('#reset')) box.querySelector('#reset').onclick = () => { g.done = []; g.miss = 0; save(); go({kind:'stage', stage:id}); };
+  box.querySelector('#sclose').onclick = () => box.remove();
+}
+/* 済の区切りをもう一度：その語にぜんぶ正解したら */
+function redoDone(){
+  stopTimer(); R.pausedAt = Date.now();
+  const gs = R.gset, n = gs.ix.length, f = gs.first.size, left = Math.max(0, R.end - Date.now());
+  app.innerHTML = `<h1>${esc(gs.label)}</h1>
+    <div class="card center">
+      <div class="big">${f}<small> / ${n}語</small></div>
+      <div>${f === n ? 'ぜんぶ一発で正解' : `${n}語中${f}語は一発で正解`}</div>
+    </div>
+    <button class="btn" id="again">もう一度<small>${left > 0 ? `残り ${clock()}` : ''}</small></button>
+    <button class="btn sub" id="pick">区切りを選びなおす</button>
+    <button class="btn sub" id="fin">終わる</button>`;
+  document.getElementById('again').onclick = () => {
+    R.gset = {...gs, done:new Set(), first:new Set(), missed:new Set()};
+    R.pausedAt = null; R.end = Date.now() + left; R.timeUp = left <= 0;
+    setKind('redo'); if(!R.timeUp) startTimer(); show();
+  };
+  document.getElementById('pick').onclick = () => { const st = gs.stage; home(); stageSheet(st); };
+  document.getElementById('fin').onclick = () => result();
+}
+/* 乱取りで一周した */
+function roundDone(){
+  stopTimer(); R.pausedAt = Date.now();
+  const n = rndAll().length, left = Math.max(0, R.end - Date.now());
+  delete S.rnd[S.only]; save();
+  app.innerHTML = `<h1>乱取り 一周</h1>
+    <div class="card center">
+      <div class="stamp big-stamp">一周<br>達成</div>
+      <div style="margin-top:6px">${randName()}${n}語を、ひと通り</div>
+    </div>
+    <button class="btn" id="nx">もう一周<small>並べ直して最初から${left > 0 ? `・残り ${clock()}` : ''}</small></button>
+    <button class="btn sub" id="fin">終わる</button>`;
+  confetti();
+  document.getElementById('nx').onclick = () => resume(left, 'random');
+  document.getElementById('fin').onclick = () => result();
 }
 /* 稽古の設定（トップの「変える」）：出す種類・時間・目標 */
 function settings(){
@@ -1047,6 +1146,9 @@ function newRun(mode){
 /* 練習を始める：plan.kind＝check（きのうの確認のあと段へ）／stage／review／random／sweep */
 function startTrain(plan){
   R = newRun('train');
+  R.fixed = plan.group != null;   // 区切りを選んで始めた：区切りは1つずつ（大きさは変えない）
+  R.whole = !!plan.whole;         // 段の20語をまとめて：区切りなし（大きさは変えない）
+  if(plan.kind === 'redo') R.gset = {ix: plan.ix.slice(), done:new Set(), first:new Set(), missed:new Set(), label: plan.label, stage: plan.stage};
   if(plan.kind === 'wrong'){
     const ix = wrongQueue();
     if(!ix.length){ R = null; return home(); }
@@ -1060,7 +1162,7 @@ function startTrain(plan){
       R.after = sweepDay() && sweepPool().length ? {kind:'sweep'} : nx ? {kind:'stage', stage:nx.id} : {kind:'review'};
       setKind('check');
     }else{ const p = goPlan(); setKind(p.kind === 'check' ? 'review' : p.kind, p.stage); }
-  }else setKind(plan.kind, plan.stage);
+  }else setKind(plan.kind, plan.stage, plan.group);
   startTimer();
   show();
 }
@@ -1080,12 +1182,13 @@ function bar(label, d, n){
 }
 function stageBar(){ const x = stageById(R.stage); return bar(esc(x.label), sDone(x), sIx(x).length); }
 /* 区切りの目盛り（●＝正解ずみ）。20語の区切りは数字だけ */
+function ckName(c){ const all = groupsOf(stageById(c.stage)).length, to = Math.min(all, c.from + c.n);
+  return all === 1 ? '' : to - c.from === 1 ? '区切り' + kn(c.from + 1) : to - c.from >= all ? '' : '区切り' + kn(c.from + 1) + '〜' + kn(to); }
 function chunkBar(){
   if(!R.ck || R.kind !== 'stage') return '';
-  const left = sIx(stageById(R.stage)).filter(i => !sg(R.stage).done.includes(i) && !out(i)).length;
-  const n = Math.min(R.ck.size, R.ck.got + left);
-  if(n <= 1) return '';
-  return `<div class="ck"><span>区切り</span>${n <= 10 ? Array.from({length:n}, (_, k) => `<i class="${k < R.ck.got ? 'on' : ''}"></i>`).join('') : ''}<b>${R.ck.got}/${n}</b></div>`;
+  const w = ckWords().filter(i => !isLater(i)), d = w.filter(i => sg(R.stage).done.includes(i)).length, nm = ckName(R.ck);
+  if(!nm || w.length <= 1) return '';
+  return `<div class="ck"><span>${nm}</span>${w.length <= 10 ? w.map((_, k) => `<i class="${k < d ? 'on' : ''}"></i>`).join('') : ''}<b>${d}/${w.length}</b></div>`;
 }
 function kindBar(){
   if(R.mode === 'mock') return '';
@@ -1093,7 +1196,9 @@ function kindBar(){
   if(R.kind === 'stage') return stageBar() + chunkBar();
   if(R.kind === 'sweep') return `<div class="sbar"><span>総ざらい（${R.sweepN}語）</span></div>`;
   if(R.kind === 'wrong') return bar('間違えた語', R.wset.done.size, R.wset.ix.length);
-  if(R.kind === 'random') return `<div class="sbar"><span>乱取り・${randName()}（${myIdx().length}語）</span></div>`;
+  if(R.kind === 'random'){ const n = rndAll().length, left = rndLeft().length;
+    return `<div class="sbar"><span>乱取り・${randName()}</span><div><i style="width:${n ? (n - left) / n * 100 : 0}%"></i></div><span>残り${left}語</span></div>`; }
+  if(R.kind === 'redo') return bar(esc(R.gset.label) + '・もう一度', R.gset.done.size, R.gset.ix.length);
   return '<div class="sbar"><span>復習の稽古</span></div>';
 }
 function header(cur){
@@ -1116,6 +1221,8 @@ function show(){
     if(R.kind === 'check') return checkDone();
     if(R.kind === 'wrong') return wrongDone();
     if(R.kind === 'stage'){ setKind('stage', R.stage); if(!R.queue.length) return stageRest(); }
+    else if(R.kind === 'redo'){ const rest = R.gset.ix.filter(i => !R.gset.done.has(i) && !out(i)); if(!rest.length) return redoDone(); R.queue.push(...shuffle(rest).map(i => ({i, revive:false}))); }
+    else if(R.kind === 'random' && !randomQueue().length) return result();
     else { R.queue.push(...refill().map(i => ({i, revive:false}))); }
   }
   if(R.pos >= R.queue.length) return result();
@@ -1244,7 +1351,17 @@ function afterAnswer(cur, ok){
     save();
     if(g.done.length >= x.ix.length) return stageClear();
     const left = sIx(x).filter(i => !g.done.includes(i) && !out(i)).length;
-    if(R.ck && R.ck.got >= R.ck.size && left > 0) return chunkDone();
+    if(R.ck && left > 0 && ckWords().every(i => g.done.includes(i) || out(i))) return chunkDone();
+  }
+  if(R.mode === 'train' && R.kind === 'random' && !cur.revive){
+    S.rnd[S.only] = rndLeft().filter(i => i !== cur.i); save();
+    if(!rndLeft().length) return roundDone();
+  }
+  if(R.mode === 'train' && R.kind === 'redo'){
+    const gs = R.gset;
+    if(!gs.done.has(cur.i) && !gs.missed.has(cur.i) && ok) gs.first.add(cur.i);
+    if(ok) gs.done.add(cur.i); else gs.missed.add(cur.i);
+    if(gs.ix.every(i => gs.done.has(i) || out(i))) return redoDone();
   }
   show();
 }
@@ -1301,20 +1418,22 @@ function checkDone(){
 }
 /* 区切りの終わり：大きさを決め直す。ノーミス→1つ大きく／2問以上まちがえた→5語に戻す */
 function closeChunk(){
-  const c = R.ck; R.ck = null;
-  if(!c || !c.got) return null;
+  const c = R.ck; if(!c) return null;
+  const words = ckWords().filter(i => !isLater(i)).length, nm = ckName(c); R.ck = null;
+  if(!c.got) return null;
+  if(R.fixed || R.whole) return {got:words, miss:c.miss, size:c.size, nm, msg: c.miss === 0 ? 'ノーミス！' : '区切りの語に、ぜんぶ正解'};
   const k = CHUNKS.indexOf(c.size);
   const size = c.miss === 0 ? CHUNKS[Math.min(k + 1, CHUNKS.length - 1)] : c.miss >= 2 ? CHUNKS[0] : c.size;
   S.chunk = size; save();
   const msg = size > c.size ? `ノーミス！次は${size}語に挑戦` : size < c.size ? `次は${size}語ずつにして、確実に` : c.miss === 0 ? 'ノーミス！この調子' : `次も${size}語ずつ`;
-  return {got:c.got, miss:c.miss, size, msg};
+  return {got:words, miss:c.miss, size, nm, msg};
 }
 /* 区切りを抜けた：判子を押して、続けるか聞く（タイマーは止める） */
 function chunkDone(){
   stopTimer(); R.pausedAt = Date.now();
   const c = closeChunk(), x = stageById(R.stage), left = Math.max(0, R.end - Date.now());
-  const rest = sIx(x).filter(i => !sg(x.id).done.includes(i)).length;
-  app.innerHTML = `<h1>区切りを突破</h1>
+  const rest = sIx(x).filter(i => !sg(x.id).done.includes(i)).length, nc = newChunk(x.id), nn = ckName(nc);
+  app.innerHTML = `<h1>${esc(c.nm || '区切り')}を突破</h1>
     <div class="card center">
       <div class="stamp big-stamp">${c.got}語<br>突破</div>
       ${c.miss ? `<div>まちがい ${c.miss}回</div>` : ''}
@@ -1322,7 +1441,7 @@ function chunkDone(){
       <div style="margin-top:8px">${stageBar()}</div>
       <div class="muted">${esc(x.label)}の残り ${rest}語</div>
     </div>
-    <button class="btn" id="nx">続ける：${esc(x.label)}${left > 0 ? `<small>次は${c.size}語・残り ${clock()}</small>` : ''}</button>
+    <button class="btn" id="nx">続ける：${esc(x.label)}${nn ? '・' + nn : ''}${left > 0 ? `<small>${R.fixed ? '' : `次は${c.size}語・`}残り ${clock()}</small>` : ''}</button>
     <button class="btn sub" id="fin">今日はここまで</button>`;
   document.getElementById('nx').onclick = () => resume(left, 'stage', x.id);
   document.getElementById('fin').onclick = () => result();
@@ -1582,8 +1701,9 @@ function manual(){
     ${sec(4, '読みの答え方', `<p>線の部分の読みを、ひらがなで入力して「こたえる」。カタカナで打っても正解になる。分からなければ「わからない」。</p>`)}
     ${sec(5, '段（ステージ）と朱印「完」', `
       <p>範囲を20語ずつに分けた「段」がある（${STAGES.length}段・最後の段だけ${STAGES[STAGES.length - 1].ix.length}語）。どの段も<b>書きと読みが混ざっている</b>（本番の20問に近い形）。「書きだけ」にすると、段の中の書きだけが出る。</p>
-      <p>段の語にぜんぶ1回ずつ正解すると<b>達成</b>。1回も間違えずに達成すると朱印<b>「完」</b>。札を押すとその段から始められる。達成した段を押すと0からやり直し（達成の記録は残る）。</p>
-      <p><b>区切り</b>：段の中は小さな区切りで進む。最初は<b>5語</b>。区切りをノーミスで抜けると次は<b>10語</b>、さらに抜けると段の<b>20語を一気に</b>。2問まちがえたら5語に戻る。区切りごとに「続ける／今日はここまで」を選べる。</p>`)}
+      <p>段の語にぜんぶ1回ずつ正解すると<b>達成</b>。1回も間違えずに達成すると朱印<b>「完」</b>。</p>
+      <p><b>札を押すと、その段の区切り（5語ずつ）が開く。</b>「区切り一」などを選ぶと、その5語だけを練習できる（終わったら次の区切りへ）。<b>「20語まとめて」</b>なら区切らずに段をぜんぶ一気に。「済」の区切りは、その5語だけをもう一度できる。段を0からやり直すのもここから（達成の記録は残る）。</p>
+      <p><b>区切り</b>：段の中は小さな区切りで進む。最初は<b>5語</b>。区切りをノーミスで抜けると次は<b>10語</b>、さらに抜けると段の<b>20語を一気に</b>。2問まちがえたら5語に戻る。区切りごとに「続ける／今日はここまで」を選べる。札から区切りを選んだときは、大きさは変わらず1区切りずつ進む。</p>`)}
     ${sec(6, '間違えたとき', `
       <ul><li><b>復活戦</b>：間違えた語は3問あとにもう一度出る</li>
       <li><b>5回つづけて×</b>：「次は行ける！」か「今日はスキップ（明日覚える）」を選べる。スキップした語は次の日に<b>リベンジ</b>としていちばん先に出る</li></ul>`)}
@@ -1591,7 +1711,7 @@ function manual(){
       <ul><li>きのうの確認・段・乱取り・間違えた語・復習・総ざらいには出ない</li><li><b>本番模試とめくり札には出る</b>（本番に出るかもしれないのは変わらない）</li>
       <li>あとまわしが残っている段は<b>達成にならない</b></li><li>ほかの語がぜんぶ「覚えた」になったら、戻すか聞く</li></ul>`)}
     ${sec(8, '乱取り・間違えた語', `
-      <p><b>乱取り</b>：選んでいる種類（ぜんぶ／書きだけ／読みだけ）の語をランダムに出す。</p>
+      <p><b>乱取り</b>：選んでいる種類（ぜんぶ／書きだけ／読みだけ）の語をランダムに出す。<b>一周するまで、まだ出ていない語から出る</b>（次の回にも持ち越す）。トップと問題画面に「残り○語」。一周すると判子「一周達成」→並べ直してもう一周。ぜんぶ・書きだけ・読みだけで別々に数える。</p>
       <p><b>間違えた語</b>：間違えた語だけを出す。<b>その日の最初の答えで正解すると外れる</b>（間違えてから正解しただけでは外れない。次の日の最初に正解すれば外れる）。</p>`)}
     ${sec(9, 'めくり札', `<p>採点しないで、めくって見るだけのカード。段ごとか、ぜんぶランダムで。カードを押すと答え、左右にスワイプか「次へ」でめくる。「いつも答えも出す」で両面を一度に見られる。電車の中や、友だちと出し合うときに。<b>記録には残らない</b>（「覚えた」にはならない）。</p>`)}
     ${sec(10, '本番模試', `
