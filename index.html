@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@700;900&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap" rel="stylesheet">
-<title>常漢勝つぞ</title>
+<title>コツコツ勝つ常漢</title>
 <style>
 :root{
   --paper:#f5efe2; --card:#fbf8f0; --ink:#1f1b16; --sub:#6b6256; --hair:#d8ccb4;
@@ -53,7 +53,7 @@ b{font-weight:700}
 .banner{border:1.5px solid var(--kin);color:var(--kin);padding:10px 12px;font-size:14px;margin-top:10px}
 /* 見出し */
 .head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;border-bottom:2px solid var(--ink);padding-bottom:8px}
-.logo{font-weight:900;font-size:31px;letter-spacing:.08em;line-height:1;margin:0}
+.logo{font-weight:900;font-size:clamp(20px,6.8vw,31px);letter-spacing:.04em;line-height:1;margin:0;white-space:nowrap}
 .dday{font-family:"Noto Serif JP",serif;font-size:13px;white-space:nowrap;text-align:right}
 .dday b{font-size:24px;color:var(--shu);font-weight:900;margin:0 2px}
 .subhead{color:var(--sub);font-size:13px;margin-top:6px}
@@ -845,7 +845,7 @@ function home(){
   const nav = (id, t, sub, dis) => `<button class="nav" id="${id}"${dis ? ' disabled' : ''}><span><b>${t}</b><small>${sub}</small></span><i>›</i></button>`;
   app.innerHTML = `
     <div class="head">
-      <h1 class="logo">常漢勝つぞ</h1>
+      <h1 class="logo">コツコツ勝つ常漢</h1>
       <div class="dday">${left > 0 ? `本番まで<b>${kn(Math.min(left, 99))}</b>日` : left === 0 ? '<b>本番当日</b>' : '本番は終了'}</div>
     </div>
     <div class="subhead">${esc(TEST.title)}（${esc(TEST.range || '')}）</div>
@@ -1029,7 +1029,7 @@ function settings(){
 /* あとまわし以外がぜんぶ「覚えた」になった：戻すか聞く */
 function laterBack(lat){
   S.laterAsked = today(); save();
-  app.innerHTML = `<div class="head"><h1 class="logo">常漢勝つぞ</h1></div>
+  app.innerHTML = `<div class="head"><h1 class="logo">コツコツ勝つ常漢</h1></div>
     <h1 style="margin-top:18px">ほかはぜんぶ覚えた</h1>
     <div class="card center">
       <div class="stamp big-stamp">ぜんぶ<br>覚えた</div>
@@ -1048,7 +1048,7 @@ function welcome(){
   clearFx();
   S.welcomed = today(); save();
   const nx = nextStage(), pool = sweepDay() ? [] : checkPool();
-  app.innerHTML = `<div class="head"><h1 class="logo">常漢勝つぞ</h1></div>
+  app.innerHTML = `<div class="head"><h1 class="logo">コツコツ勝つ常漢</h1></div>
     <h1 style="margin-top:18px">おかえり</h1>
     <div class="card">
       ${nx ? `<div>${esc(nx.label)}は <b>${sg(nx.id).done.length}/${nx.ix.length}</b> まで進んでるよ。</div>` : '<div>段はぜんぶ達成ずみ。</div>'}
@@ -1069,7 +1069,7 @@ function goalScreen(first){
   let g = clampGoal(S.goal || TEST.pass);
   let dg = Math.min(maxDays(), S.dayGoal || defaultDayGoal()); const dg0 = dg;
   const showDays = daysLeft() > 0;
-  app.innerHTML = `<div class="head"><h1 class="logo">常漢勝つぞ</h1></div>
+  app.innerHTML = `<div class="head"><h1 class="logo">コツコツ勝つ常漢</h1></div>
     <h1 style="margin-top:18px">目標を決める</h1>
     <div class="card center">
       <div>${esc(TEST.title)}で、何点をめざす？</div>
