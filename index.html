@@ -350,6 +350,7 @@ const QUESTIONS = [
 
 const EXTEND_MIN = [1, 3, 5];   // 時間切れのときに選べる延長
 const REVIVE_GAP = 3;        // 間違えた問題は3問あとに「復活戦」で出す
+const SKIP_AFTER = 5;        // 同じ語を今日この回数つづけて間違えたら「次は行ける／今日はスキップ」を選ばせる
 const STAGE_SIZE = 20;       // 1ステージの語数の目安（範囲を等分する）
 
 /* ステージ：書き・読みをそれぞれ用紙の順に約20語ずつ区切る。
@@ -382,7 +383,13 @@ if(!S.stages) S.stages = {};                              // ステージの進�
 const sg = id => S.stages[id] || (S.stages[id] = {done:[], miss:0, cleared:false, perfect:false});
 const stageById = id => STAGES.find(x => x.id === id);
 const myStages = () => STAGES.filter(x => S.only === 'all' || x.t === S.only);
-function nextStage(){ return myStages().find(x => !sg(x.id).cleared) || null; }
+if(!S.skip) S.skip = {};                                  // 明日覚える字 {問題番号: スキップした日}
+const skippedToday = i => S.skip[i] === today();          // 今日はもう出さない
+const revenge = i => !!S.skip[i] && S.skip[i] < today();  // 前の日にスキップした字＝リベンジ（最初に出す）
+const revengeFirst = ix => [...ix.filter(revenge), ...ix.filter(i => !revenge(i))];
+/* ステージに今日出せる語が残っているか */
+const stageOpen = x => x.ix.some(i => !sg(x.id).done.includes(i) && !skippedToday(i));
+function nextStage(){ return myStages().find(x => !sg(x.id).cleared && stageOpen(x)) || null; }
 const st = i => S.items[i] || (S.items[i] = {seen:0, ok:0, streak:0, last:null});
 
 /* 覚えた＝2回続けて正解／あと少し＝直近が正解／苦手＝直近が不正解 */
@@ -424,6 +431,9 @@ function record(i, ok){
   const s = st(i); s.seen++; s.last = Date.now();
   // 「覚えた」は別の回で2回続けて正解したとき。同じ回の中で何度正解しても連続は1つしか進めない
   if(ok){ s.ok++; if(!(R && R.counted.has(i))) s.streak++; } else { s.streak = 0; }
+  if(s.wrDay !== today()){ s.wr = 0; s.wrDay = today(); }   // 今日の連続まちがい
+  s.wr = ok ? 0 : (s.wr || 0) + 1;
+  if(ok && revenge(i)) delete S.skip[i];                     // リベンジ成功
   if(R) R.counted.add(i);
   if(!S.days.includes(today())) S.days.push(today());
   save();
@@ -491,6 +501,9 @@ function home(){
       return `<button data-st="${x.id}" class="${g.cleared ? 'clr' : ''}${nx && nx.id === x.id ? ' now' : ''}">${esc(x.name)}<small>${
         g.perfect ? '👑 ノーミス' : g.cleared ? '✓ クリア' : `${g.done.length}/${x.ix.length}`}</small></button>`; }).join('')}</div>
     <div class="muted" style="text-align:center">${nx ? 'ステージは押して選び直せる（クリアしたステージはやり直し）' : '🎉 ぜんぶのステージをクリア！ いまは苦手な字から出る復習モード'}</div>
+    ${(() => { const t = Object.keys(S.skip).filter(i => skippedToday(+i)).length, r = Object.keys(S.skip).filter(i => revenge(+i)).length;
+      return (t ? `<div class="muted" style="text-align:center">🌙 今日は${t}語を明日にまわした</div>` : '')
+           + (r ? `<div class="muted" style="text-align:center">💪 リベンジ${r}語 → いちばん先に出るよ</div>` : ''); })()}
     <button class="btn sub" id="rand">🎲 ${randName()}（${myIdx().length}語）</button>
     <div class="row">
       <button class="btn sub" id="mock">本番模試</button>
@@ -520,8 +533,8 @@ function home(){
 /* 出す順：苦手 → まだ出ていない → あと少し → 覚えた（それぞれの中はシャッフル） */
 function trainQueue(){
   const g = {0:[], '-1':[], 1:[], 2:[]};
-  QUESTIONS.forEach((q, i) => { if(S.only === 'all' || q.t === S.only) g[level(i)].push(i); });
-  return [...shuffle(g[0]), ...shuffle(g[-1]), ...shuffle(g[1]), ...shuffle(g[2])];
+  QUESTIONS.forEach((q, i) => { if((S.only === 'all' || q.t === S.only) && !skippedToday(i)) g[level(i)].push(i); });
+  return revengeFirst([...shuffle(g[0]), ...shuffle(g[-1]), ...shuffle(g[1]), ...shuffle(g[2])]);
 }
 /* 本番模試：本番と同じく書き15問・読み5問（範囲が足りなければある分だけ） */
 function mockQueue(){
@@ -532,11 +545,11 @@ function mockQueue(){
 /* ステージの出題：まだ正解していない語をシャッフル */
 function stageQueue(id){
   const g = sg(id);
-  return shuffle(stageById(id).ix.filter(i => !g.done.includes(i)));
+  return revengeFirst(shuffle(stageById(id).ix.filter(i => !g.done.includes(i) && !skippedToday(i))));
 }
 /* ランダム：選んでいる種類（ぜんぶ／書きだけ／読みだけ）の全語をシャッフル */
 function myIdx(){ return QUESTIONS.map((q, i) => (S.only === 'all' || q.t === S.only) ? i : -1).filter(i => i >= 0); }
-function randomQueue(){ return shuffle(myIdx()); }
+function randomQueue(){ return revengeFirst(shuffle(myIdx().filter(i => !skippedToday(i)))); }
 function randName(){ return ({all:'ぜんぶ', k:'書き', y:'読み'})[S.only] + 'ランダム'; }
 /* 一周したときの補充：ランダムは並べ直し、復習モードは覚えていない字から */
 function refill(){
@@ -578,6 +591,7 @@ function header(cur){
     ? `<span class="timer" id="timer">${clock()}</span>`
     : `<span>${R.pos + 1} / ${R.queue.length}</span>`;
   const kind = cur.revive ? '<span class="kind revive">復活戦</span>'
+             : revenge(cur.i) ? '<span class="kind revive">リベンジ</span>'
              : `<span class="kind">${QUESTIONS[cur.i].t === 'y' ? '読み' : '書き'}</span>`;
   return `<div class="top">${left}${kind}<button class="btn sub" style="width:auto;margin:0;padding:6px 12px;font-size:14px" id="quit">やめる</button></div>
           ${R.stage ? stageBar() : R.random ? `<div class="sbar"><span>🎲 ${randName()}（${myIdx().length}語）</span></div>` : ''}
@@ -589,7 +603,12 @@ function stageBar(){
 }
 function show(){
   if(R.mode === 'train' && R.timeUp) return askExtend();
-  if(R.mode === 'train' && R.stage && R.pos >= R.queue.length) setStage(R.stage);   // 念のため（通常はクリアで抜ける）
+  if(R.mode === 'train') while(R.pos < R.queue.length && skippedToday(R.queue[R.pos].i)) R.pos++;
+  if(R.mode === 'train' && R.stage && R.pos >= R.queue.length){
+    setStage(R.stage);                                   // 念のため（通常はクリアで抜ける）
+    if(!R.queue.length) return stageRest();              // 残りが明日覚える字だけ
+  }
+  if(R.mode === 'train' && !R.stage && R.pos >= R.queue.length && !R.timeUp) R.queue.push(...refill().map(i => ({i, revive:false})));
   if(R.pos >= R.queue.length) return result();
   const cur = R.queue[R.pos], item = QUESTIONS[cur.i];
   if(item.t === 'y'){
@@ -666,7 +685,31 @@ function next(ok, alreadyBumped){
   if(!alreadyBumped) bump(ok);
   if(!ok && R.mode === 'train'){
     R.queue.splice(Math.min(R.pos + 1 + REVIVE_GAP, R.queue.length), 0, {i:cur.i, revive:true});
+    if(st(cur.i).wr >= SKIP_AFTER) return askSkip(cur.i, ok);
   }
+  afterAnswer(cur, ok);
+}
+/* 同じ語を今日5回つづけて間違えた：「次は行ける」か「今日はスキップ（明日覚える）」を選ぶ */
+function askSkip(i, ok){
+  const q = QUESTIONS[i], w = q.t === 'y' ? q.q.replace(/［|］/g, '') : (q.w || q.a);
+  app.innerHTML = `<h1>😵 ${SKIP_AFTER}回つづけてまちがえた</h1>
+    <div class="card center">
+      <div class="big">${esc(w)}</div>
+      ${q.t === 'y' ? `<div class="full">${q.a.map(esc).join(' ／ ')}</div>` : ''}
+      ${extra(q)}
+      <div style="margin-top:8px">この字、どうする？</div>
+    </div>
+    <button class="btn" id="go2">💪 次は行ける！</button>
+    <button class="btn sub" id="skip">🌙 今日はスキップ（明日覚える）</button>`;
+  document.getElementById('go2').onclick = () => { st(i).wr = 0; save(); afterAnswer(R.queue[R.pos], ok); };
+  document.getElementById('skip').onclick = () => {
+    S.skip[i] = today(); save();
+    R.queue = R.queue.filter((e, k) => k <= R.pos || e.i !== i);   // この先の出番を消す
+    R.skipped = (R.skipped || 0) + 1;
+    afterAnswer(R.queue[R.pos], ok);
+  };
+}
+function afterAnswer(cur, ok){
   R.pos++;
   if(R.mode === 'train' && R.stage){
     const g = sg(R.stage), x = stageById(R.stage);
@@ -679,6 +722,26 @@ function next(ok, alreadyBumped){
     R.queue.push(...refill().map(i => ({i, revive:false})));
   }
   show();
+}
+/* ステージの残りが「明日覚える字」だけになった：次のステージへ進める */
+function stageRest(){
+  stopTimer();
+  const x = stageById(R.stage), g = sg(R.stage), rest = x.ix.filter(i => !g.done.includes(i)).length;
+  const left = Math.max(0, R.end - Date.now()), nx = nextStage();
+  app.innerHTML = `<h1>🌙 ${esc(x.name)}は今日ここまで</h1>
+    <div class="card center">
+      <div>${x.ix.length - rest}/${x.ix.length}語 正解！</div>
+      <div class="muted">残り${rest}語は明日覚える字。明日いちばん先に出るよ</div>
+    </div>
+    <button class="btn" id="nx">${nx ? `次へ：${esc(nx.name)}` : '復習モードへ'}${left > 0 ? `（残り ${clock()}）` : ''}</button>
+    <button class="btn sub" id="fin">終わる</button>`;
+  document.getElementById('nx').onclick = () => {
+    R.end = Date.now() + left; R.timeUp = left <= 0;
+    setStage(nx ? nx.id : null);
+    if(!R.timeUp) timerId = setInterval(tick, 250);
+    show();
+  };
+  document.getElementById('fin').onclick = result;
 }
 /* ステージクリア：タイマーを止めて祝う。続けるなら残り時間から再開 */
 function stageClear(){
@@ -750,6 +813,7 @@ function result(){
       <div class="muted">今日の${R.minutes}分</div>
       <div class="big">${R.right}<span style="font-size:20px"> / ${R.total}問 正解</span></div>
       <div>最高 <b>${R.maxCombo}</b> コンボ</div>
+      ${R.skipped ? `<div class="muted">🌙 明日覚える字 ${R.skipped}語</div>` : ''}
       ${R.clears.length ? `<div class="goal" style="font-size:20px;margin-top:6px">クリア：${R.clears.map(esc).join('・')}</div>` : ''}
       ${R.stage && !sg(R.stage).cleared ? `<div style="margin-top:6px">${stageBar()}</div><div class="muted">続きは次の回から</div>` : ''}
       <div style="margin-top:8px">覚えた <b>${mastered()}</b>字（${gained >= 0 ? '+' : ''}${gained}）・あと少し <b>${almost()}</b>字</div>
@@ -766,7 +830,7 @@ function result(){
 function zukan(){
   const tiles = QUESTIONS.map((q, i) => {
     const l = level(i), w = q.t === 'y' ? q.q.match(/［(.+?)］/)[1] : (q.w || q.a);
-    return `<div class="tile s${l}">${esc(w)}<small>${q.t === 'y' ? '読み' : '書き'}</small></div>`;
+    return `<div class="tile s${l}">${esc(w)}<small>${q.t === 'y' ? '読み' : '書き'}${skippedToday(i) ? '・🌙明日' : revenge(i) ? '・💪' : ''}</small></div>`;
   }).join('');
   app.innerHTML = `<h1>ずかん</h1>
     <div class="legend"><span><i style="background:var(--ok-bg)"></i>覚えた</span><span><i style="background:var(--gold-bg)"></i>あと少し</span>
