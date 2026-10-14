@@ -1,0 +1,784 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1d4ed8">
+<title>常漢勝つぞ</title>
+<style>
+:root{
+  --bg:#f5f6fa; --card:#ffffff; --ink:#1b1f2a; --sub:#5b6475; --line:#dde1ea;
+  --main:#1d4ed8; --main-ink:#ffffff; --ok:#15803d; --ok-bg:#dcfce7; --ng:#b91c1c; --ng-bg:#fee2e2;
+  --gold:#b45309; --gold-bg:#fef3c7; --track:#e5e7ef;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0f1218; --card:#1a1f2a; --ink:#eef1f7; --sub:#a3acbd; --line:#2c3341;
+    --main:#5b8cff; --main-ink:#0b1020; --ok:#4ade80; --ok-bg:#12331f; --ng:#f87171; --ng-bg:#3a1616;
+    --gold:#fbbf24; --gold-bg:#3a2a0b; --track:#2a303d;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP","Yu Gothic UI",sans-serif;
+  -webkit-text-size-adjust:100%}
+body{min-height:100dvh}
+.wrap{max-width:520px;margin:0 auto;padding:16px 16px calc(24px + env(safe-area-inset-bottom))}
+h1{font-size:22px;margin:4px 0 2px}
+.muted{color:var(--sub);font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:12px 0}
+.btn{display:block;width:100%;border:0;border-radius:14px;padding:16px;font-size:18px;font-weight:700;
+  background:var(--main);color:var(--main-ink);margin:10px 0;cursor:pointer;font-family:inherit}
+.btn.sub{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.btn.ok{background:var(--ok);color:#fff}
+.btn.ng{background:var(--ng);color:#fff}
+.btn:active{transform:scale(.98)}
+.row{display:flex;gap:10px}
+.row>.btn{flex:1;font-size:16px;padding:16px 6px;white-space:nowrap}
+.banner{background:var(--gold-bg);color:var(--gold);border-radius:12px;padding:10px 12px;font-size:14px;margin-top:10px}
+/* 予想点メーター */
+.meter{position:relative;height:22px;background:var(--track);border-radius:11px;margin:30px 0 8px}
+.meter .fill{position:absolute;left:0;top:0;bottom:0;background:var(--main);border-radius:11px;transition:width .6s}
+.meter .pass{position:absolute;top:-24px;bottom:-4px;border-left:3px dashed var(--ng)}
+.meter .pass span{position:absolute;top:0;left:4px;font-size:12px;color:var(--ng);white-space:nowrap;font-weight:700}
+.big{font-size:40px;font-weight:800;line-height:1.1}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.stats b{display:block;font-size:22px}
+.stats span{font-size:12px;color:var(--sub)}
+/* 問題 */
+.top{display:flex;justify-content:space-between;align-items:center;font-size:15px;color:var(--sub)}
+.timer{font-variant-numeric:tabular-nums;font-weight:800;font-size:20px;color:var(--ink)}
+.timer.low{color:var(--ng)}
+.kind{display:inline-block;font-size:13px;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--track)}
+.revive{background:var(--gold-bg);color:var(--gold)}
+.q{font-size:24px;line-height:1.9;margin:14px 0 6px;word-break:break-all}
+.q.solo{font-size:34px;text-align:center;margin:20px 0 14px}
+.q u{text-decoration:none;border-bottom:3px solid var(--main);padding:0 2px;font-weight:800}
+.ask{font-size:14px;color:var(--sub)}
+input.ans{width:100%;font-size:24px;padding:14px;border-radius:12px;border:2px solid var(--line);
+  background:var(--bg);color:var(--ink);font-family:inherit}
+input.ans:focus{outline:none;border-color:var(--main)}
+.answer{font-size:56px;font-weight:800;text-align:center;margin:8px 0;letter-spacing:.05em}
+.full{text-align:center;color:var(--sub);font-size:16px}
+.judge{border-radius:12px;padding:12px;margin:12px 0;font-weight:700;font-size:18px;text-align:center}
+.judge.ok{background:var(--ok-bg);color:var(--ok)}
+.judge.ng{background:var(--ng-bg);color:var(--ng)}
+.combo{height:28px;text-align:center;font-weight:800;color:var(--gold);font-size:20px}
+.pop{animation:pop .5s}
+@keyframes pop{0%{transform:scale(.6);opacity:0}60%{transform:scale(1.25);opacity:1}100%{transform:scale(1)}}
+/* 結果 */
+.center{text-align:center}
+.goal{font-size:28px;font-weight:800;color:var(--ok)}
+/* ずかん */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:6px}
+.tile{border-radius:10px;padding:8px 2px;text-align:center;font-weight:700;font-size:15px;border:1px solid var(--line);background:var(--card)}
+.tile small{display:block;font-size:10px;font-weight:400;color:var(--sub)}
+.tile.s2{background:var(--ok-bg);color:var(--ok);border-color:transparent}
+.tile.s1{background:var(--gold-bg);color:var(--gold);border-color:transparent}
+.tile.s0{background:var(--ng-bg);color:var(--ng);border-color:transparent}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--sub);margin:8px 0}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.confetti i{position:absolute;top:-20px;width:10px;height:14px;border-radius:2px;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+.hidden{display:none}
+.mean{background:var(--bg);border-radius:10px;padding:10px 12px;margin:0 0 6px;font-size:16px;line-height:1.6}
+.mean b,.ex b{display:inline-block;font-size:12px;color:var(--sub);margin-right:8px;border:1px solid var(--line);border-radius:6px;padding:0 6px;vertical-align:1px}
+.ex{background:var(--bg);border-radius:10px;padding:10px 12px;margin:10px 0 4px;font-size:16px;line-height:1.7;text-align:left}
+.ex div+div{margin-top:6px}
+.ex mark{background:transparent;color:var(--main);font-weight:800;border-bottom:2px solid var(--main)}
+.map{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:4px 0 8px}
+.map button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:8px 2px;font:inherit;font-weight:700;font-size:14px;cursor:pointer}
+.map button small{display:block;font-size:11px;font-weight:400;color:var(--sub);margin-top:2px}
+.map button.clr{background:var(--ok-bg);color:var(--ok);border-color:transparent}
+.map button.clr small{color:var(--ok)}
+.map button.now{border:2px solid var(--main)}
+.sbar{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--sub);font-weight:700;margin-top:8px}
+.sbar div{flex:1;height:8px;background:var(--track);border-radius:4px;overflow:hidden}
+.sbar i{display:block;height:100%;background:var(--ok);transition:width .3s}
+.stepper{display:flex;align-items:center;justify-content:center;gap:14px;margin:14px 0 0}
+.stepper button{width:48px;height:48px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:24px;font-weight:700;cursor:pointer;font-family:inherit}
+.stepper b{font-size:24px;min-width:64px;text-align:center}
+.seg{display:flex;background:var(--track);border-radius:12px;padding:4px;gap:4px;margin-top:12px}
+.seg button{flex:1;border:0;background:transparent;color:var(--sub);font:inherit;font-weight:700;font-size:15px;padding:10px 4px;border-radius:9px;cursor:pointer}
+.seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script>
+/* ====== テストの設定（回ごとにここを差し替える） ====== */
+const TEST = {
+  id: 'r8-05',          // 回を変えたら変える（記録はこのidごとに分かれる）
+  title: '第5回 常用漢字テスト',
+  date: '2026-10-26',          // 本番の日
+  full: 50,                    // 満点（未確認・仮）
+  pass: 30,                    // 合格点（本人「確か30点」）
+  mockKaki: 15,                // 本番の書き取りの問題数（実施要項：第1〜6回は書き15問）
+  mockYomi: 5,                 // 本番の読み取りの問題数（同：読み5問）
+  range: 'P.76〜87・P.117〜118',
+  sample: false                // サンプル問題のときtrue（注意書きを出す）
+};
+/* 問題：t='y'＝読み（a＝ひらがな・複数可）／t='k'＝書き（a＝漢字・w＝送り仮名まで入れた語）。［ ］の中が出題部分
+   m＝意味（書きは問題に出すので答えの漢字を含めない）／e＝例文（答えの画面に出す）。意味と例文はClaudeが作成（2026-10-14）
+   第5回＝国語科の練習用紙（表・裏の上半分＝書き152語／裏の下半分＝読み69語）から。読み69語の答えは用紙に無いのでClaudeが付けた */
+const QUESTIONS = [
+  {t:'k', q:"［ロテイ］", a:"露呈", w:"露呈", m:"隠れていた事実や欠点が表に出ること", e:"準備不足が本番で露呈した。"},
+  {t:'k', q:"［ゴフク］", a:"呉服", w:"呉服", m:"わふく用の織物。また、着物のこと", e:"祖母は駅前で呉服店を営んでいる。"},
+  {t:'k', q:"［イカク］", a:"威嚇", w:"威嚇", m:"力を見せつけておどすこと", e:"猫が毛を逆立てて犬を威嚇した。"},
+  {t:'k', q:"［ユイイツ］", a:"唯一", w:"唯一", m:"ただひとつだけであること", e:"彼女はクラスで唯一の皆勤賞だった。"},
+  {t:'k', q:"［キョウカツ］", a:"恐喝", w:"恐喝", m:"おどして金品をうばい取ること", e:"恐喝は重い犯罪だと公民の授業で学んだ。"},
+  {t:'k', q:"［キョウサ］", a:"教唆", w:"教唆", m:"他人をそそのかして悪いことをさせること", e:"犯罪を教唆した者も罰せられる。"},
+  {t:'k', q:"［ギンミ］", a:"吟味", w:"吟味", m:"内容や品質を念入りに調べること", e:"材料を吟味して文化祭のメニューを決めた。"},
+  {t:'k', q:"［サンカ］", a:"傘下", w:"傘下", m:"大きな組織の支配や指導を受ける立場にあること", e:"その会社は大手グループの傘下に入った。"},
+  {t:'k', q:"［ムショウ］", a:"無償", w:"無償", m:"代金や報酬を受け取らないこと。ただ", e:"義務教育の教科書は無償で配られる。"},
+  {t:'k', q:"［ジュガク］", a:"儒学", w:"儒学", m:"孔子の教えをもとにした思想の研究", e:"江戸時代には儒学が武士の教養とされた。"},
+  {t:'k', q:"［リョウユウ］", a:"僚友", w:"僚友", m:"同じ職場や仕事の仲間", e:"退職する先生を僚友たちが拍手で送り出した。"},
+  {t:'k', q:"［コウボク］", a:"公僕", w:"公僕", m:"国民全体に奉仕する者。役人のこと", e:"公務員は国民の公僕であるといわれる。"},
+  {t:'k', q:"［ケッシュツ］", a:"傑出", w:"傑出", m:"ほかより飛び抜けてすぐれていること", e:"彼のサーブ力はチームの中でも傑出している。"},
+  {t:'k', q:"［ヘンケン］", a:"偏見", w:"偏見", m:"かたよったものの考え方", e:"偏見を持たずに相手の話を聞こう。"},
+  {t:'k', q:"［タンテイ］", a:"探偵", w:"探偵", m:"ひそかに人の事情や事件を調べること。また、その人", e:"推理小説の探偵が鮮やかに事件を解いた。"},
+  {t:'k', q:"［シンギ］", a:"真偽", w:"真偽", m:"本当かうそか", e:"ネットの情報は真偽を確かめてから広めよう。"},
+  {t:'k', q:"［リンリ］", a:"倫理", w:"倫理", m:"人として守るべき道。道徳", e:"情報モラルは現代の倫理の一つだ。"},
+  {t:'k', q:"［ネンポウ］", a:"年俸", w:"年俸", m:"まる1ねん分として決める給料（月給に対していう）", e:"プロ野球選手の年俸が発表された。"},
+  {t:'k', q:"［シュンビン］", a:"俊敏", w:"俊敏", m:"頭の働きや動作がすばやいこと", e:"リベロの俊敏な動きでボールを拾った。"},
+  {t:'k', q:"［ショコウ］", a:"諸侯", w:"諸侯", m:"封建時代に領地を治めた君主たち", e:"中世ヨーロッパでは諸侯が各地を治めていた。"},
+  {t:'k', q:"［ヘイガン］", a:"併願", w:"併願", m:"二つ以上の学校などを同時に受験すること", e:"第一志望とは別の大学を併願する。"},
+  {t:'k', q:"［ブジョク］", a:"侮辱", w:"侮辱", m:"相手をばかにして恥をかかせること", e:"人を侮辱する言葉は使わない。"},
+  {t:'k', q:"［ハクチュウ］", a:"伯仲", w:"伯仲", m:"力が接近していて優劣がつけにくいこと", e:"両チームの実力は伯仲している。"},
+  {t:'k', q:"［タダ］し", a:"但", w:"但し", m:"そうではあるが。条件や例外を付け加えるときの語", e:"明日の練習は自由参加です。但し、事前に連絡すること。"},
+  {t:'k', q:"［センニン］", a:"仙人", w:"仙人", m:"山奥に住み、不思議な力を持つとされる者", e:"山にこもって暮らす仙人の昔話を読んだ。"},
+  {t:'k', q:"［ミサキ］", a:"岬", w:"岬", m:"海や湖に突き出た陸地の先端", e:"岬の灯台から房総の海を眺めた。"},
+  {t:'k', q:"［ダキョウ］", a:"妥協", w:"妥協", m:"対立する意見をゆずり合って折り合いをつけること", e:"話し合いの末、両方が妥協して案がまとまった。"},
+  {t:'k', q:"［モウソウ］", a:"妄想", w:"妄想", m:"根拠のないことを事実のように思い込むこと", e:"試験前に悪い妄想ばかりせず、準備をしよう。"},
+  {t:'k', q:"［チャクナン］", a:"嫡男", w:"嫡男", m:"家をつぐ長子。あととりのむすこ", e:"戦国武将の嫡男として育てられた。"},
+  {t:'k', q:"［キゲン］", a:"機嫌", w:"機嫌", m:"気分のよしあし", e:"試合に勝って監督は上機嫌だった。"},
+  {t:'k', q:"［バイタイ］", a:"媒体", w:"媒体", m:"情報を伝える手段。メディア", e:"新聞やテレビは情報を伝える媒体だ。"},
+  {t:'k', q:"［ニンシン］", a:"妊娠", w:"妊娠", m:"体内に子どもを宿すこと", e:"保健の授業で妊娠と出産のしくみを学んだ。"},
+  {t:'k', q:"［インゾク］", a:"姻族", w:"姻族", m:"結婚によってできる親類", e:"配偶者の両親は姻族にあたる。"},
+  {t:'k', q:"［ニンプ］", a:"妊婦", w:"妊婦", m:"おなかに子どもを宿している女性", e:"電車で妊婦の方に席をゆずった。"},
+  {t:'k', q:"［オウヒ］", a:"王妃", w:"王妃", m:"君主のつま", e:"世界史の資料集に王妃の肖像画が載っている。"},
+  {t:'k', q:"［ジュクセイ］", a:"塾生", w:"塾生", m:"じゅくに通って学ぶ者", e:"夏期講習に多くの塾生が集まった。"},
+  {t:'k', q:"［ソゾウ］", a:"塑像", w:"塑像", m:"粘土などで形を作ったぞう（彫刻）", e:"美術の時間に粘土で塑像を作った。"},
+  {t:'k', q:"［マンルイ］", a:"満塁", w:"満塁", m:"野球で、一・二・三るいのすべてに走者がいること", e:"九回裏、満塁のチャンスを迎えた。"},
+  {t:'k', q:"［ダラク］", a:"堕落", w:"堕落", m:"生活や品行が悪くなり、だらしなくなること", e:"目標を失って堕落した生活を送らないようにしよう。"},
+  {t:'k', q:"［ドジョウ］", a:"土壌", w:"土壌", m:"作物を育てるつち。また、物事を生み出すもとになる環境", e:"自由に意見を言える土壌がこのクラスにはある。"},
+  {t:'k', q:"［ヘイ］", a:"塀", w:"塀", m:"敷地の境に作る囲い", e:"校舎の周りの塀にペンキを塗った。"},
+  {t:'k', q:"［カイヅカ］", a:"貝塚", w:"貝塚", m:"大昔の人が食べたかいがらなどが積もった遺跡", e:"千葉県には加曽利貝塚など多くの貝塚がある。"},
+  {t:'k', q:"［カンニン］", a:"堪忍", w:"堪忍", m:"怒りをこらえて人の過ちを許すこと", e:"「もう堪忍してくれ」と兄が笑った。"},
+  {t:'k', q:"［ツリボリ］", a:"釣堀", w:"釣堀", m:"池に魚を放し、料金を取ってつらせる所", e:"休日に家族で釣堀へ出かけた。"},
+  {t:'k', q:"［バイヨウ］", a:"培養", w:"培養", m:"細菌や細胞などを人工的に育てること", e:"生物の実験で微生物を培養した。"},
+  {t:'k', q:"［イシガキ］", a:"石垣", w:"石垣", m:"いしを積み重ねて作ったかべ", e:"城の石垣は今も崩れずに残っている。"},
+  {t:'k', q:"［ツボスウ］", a:"坪数", w:"坪数", m:"つぼで表した土地や建物の広さ", e:"新しい体育館の坪数を調べた。"},
+  {t:'k', q:"［ケイシ］", a:"継嗣", w:"継嗣", m:"家をつぐ子。あとつぎ", e:"藩主には継嗣がいなかった。"},
+  {t:'k', q:"［ソウシツ］", a:"喪失", w:"喪失", m:"なくすこと", e:"連敗で自信を喪失しないように声をかけた。"},
+  {t:'k', q:"［シンオン］", a:"唇音", w:"唇音", m:"くちびるを使って出すおと（「ぱ」「ば」「ま」など）", e:"「ぱ」「ば」「ま」の子音は唇音だ。"},
+  {t:'k', q:"［ユウカイ］", a:"誘拐", w:"誘拐", m:"人をだまして連れ去ること", e:"防犯教室で誘拐から身を守る方法を学んだ。"},
+  {t:'k', q:"［フヨウ］", a:"扶養", w:"扶養", m:"生活の面倒を見てやしなうこと", e:"親は子を扶養する義務がある。"},
+  {t:'k', q:"［ハアク］", a:"把握", w:"把握", m:"しっかりと理解すること", e:"担任としてクラスの状況を把握する。"},
+  {t:'k', q:"［ショウホン］", a:"抄本", w:"抄本", m:"もとの書類の一部を抜き書きしたもの", e:"戸籍抄本を市役所で受け取った。"},
+  {t:'k', q:"［ケネン］", a:"懸念", w:"懸念", m:"気にかかって心配すること", e:"雨で大会が中止になる懸念がある。"},
+  {t:'k', q:"［チョウバツ］", a:"懲罰", w:"懲罰", m:"不正や違反をこらしめること", e:"規則を破った選手に懲罰が科された。"},
+  {t:'k', q:"［コンダン］", a:"懇談", w:"懇談", m:"打ち解けて親しく話し合うこと", e:"保護者との懇談会が放課後に開かれた。"},
+  {t:'k', q:"［ケイシュク］", a:"慶祝", w:"慶祝", m:"喜んでいわうこと", e:"創立記念日に慶祝の式典が行われた。"},
+  {t:'k', q:"［アイシュウ］", a:"哀愁", w:"哀愁", m:"もの悲しい気持ち", e:"夕暮れの海に哀愁を感じた。"},
+  {t:'k', q:"［ユウチョウ］", a:"悠長", w:"悠長", m:"落ち着いていて、のんびりしていること", e:"試験前日に悠長に構えている場合ではない。"},
+  {t:'k', q:"［カンブ］", a:"患部", w:"患部", m:"病気やけがをしているところ", e:"患部を冷やしてから保健室へ行こう。"},
+  {t:'k', q:"［ニンジャ］", a:"忍者", w:"忍者", m:"敵地にひそみ、情報を集めたりした人。しのび", e:"修学旅行で忍者屋敷を見学した。"},
+  {t:'k', q:"［キョウガ］", a:"恭賀", w:"恭賀", m:"うやうやしく祝うこと", e:"年賀状に「恭賀新年」と書いた。"},
+  {t:'k', q:"［イカン］", a:"遺憾", w:"遺憾", m:"期待どおりにならず残念に思うこと", e:"市長は事故について遺憾の意を表した。"},
+  {t:'k', q:"［カイギ］", a:"懐疑", w:"懐疑", m:"本当かどうかうたがうこと", e:"新しい説に懐疑的な意見も出た。"},
+  {t:'k', q:"［フンガイ］", a:"憤慨", w:"憤慨", m:"ひどく腹を立てること", e:"不公平な判定に観客が憤慨した。"},
+  {t:'k', q:"［ユカイ］", a:"愉快", w:"愉快", m:"楽しく気持ちがよいこと", e:"修学旅行は愉快な思い出になった。"},
+  {t:'k', q:"［ダセイ］", a:"惰性", w:"惰性", m:"これまでの勢いや習慣で続けること", e:"惰性で練習せず、目的を持って取り組もう。"},
+  {t:'k', q:"［ツイトウ］", a:"追悼", w:"追悼", m:"亡くなった人をしのび、悲しむこと", e:"震災の犠牲者を追悼して黙とうした。"},
+  {t:'k', q:"［テッテイ］", a:"徹底", w:"徹底", m:"すみずみまで行き渡らせること", e:"手洗いとうがいを徹底する。"},
+  {t:'k', q:"［ジュンカン］", a:"循環", w:"循環", m:"ひと回りしてまた元に戻ることを繰り返すこと", e:"血液は体内を循環している。"},
+  {t:'k', q:"［ケイチョウ］", a:"慶弔", w:"慶弔", m:"喜ぶべきことと悲しむべきこと", e:"慶弔の際には休暇が認められる。"},
+  {t:'k', q:"［ゲンガク］", a:"弦楽", w:"弦楽", m:"バイオリンやチェロなどで演奏するおんがく", e:"文化祭で弦楽四重奏を聴いた。"},
+  {t:'k', q:"［シヘイ］", a:"紙幣", w:"紙幣", m:"お札", e:"新しいデザインの紙幣が発行された。"},
+  {t:'k', q:"［トウスイ］", a:"統帥", w:"統帥", m:"軍隊を率いて指揮すること", e:"歴史の授業で統帥権について学んだ。"},
+  {t:'k', q:"［スウコウ］", a:"崇高", w:"崇高", m:"けだかく尊いこと", e:"人の命を救う崇高な仕事に就きたい。"},
+  {t:'k', q:"［ウラビト］", a:"浦人", w:"浦人", m:"海辺に住むひと。漁民", e:"浦人たちが朝早くから網を引いていた。"},
+  {t:'k', q:"［ドウサツ］", a:"洞察", w:"洞察", m:"物事の本質を見抜くこと", e:"筆者の鋭い洞察に感心した。"},
+  {t:'k', q:"［シンシン］", a:"津津", w:"津津", m:"（「興味しんしん」の形で）あふれ出るほど多いさま", e:"生徒たちは実験に興味津津だった。"},
+  {t:'k', q:"［ジョウカ］", a:"浄化", w:"浄化", m:"よごれを取り除いてきれいにすること", e:"森林には空気を浄化する働きがある。"},
+  {t:'k', q:"［コウズイ］", a:"洪水", w:"洪水", m:"大雨で川があふれ出ること", e:"洪水に備えてハザードマップを確認しよう。"},
+  {t:'k', q:"［キホウ］", a:"気泡", w:"気泡", m:"液体や固体の中にできる小さなあわ", e:"水を熱すると底から気泡が出てくる。"},
+  {t:'k', q:"［シャフツ］", a:"煮沸", w:"煮沸", m:"にえたたせること。熱湯で消毒すること", e:"実験器具を煮沸して消毒した。"},
+  {t:'k', q:"［コウデイ］", a:"拘泥", w:"拘泥", m:"一つのことにこだわること", e:"小さな失敗に拘泥せず次のプレーに集中しよう。"},
+  {t:'k', q:"［チョウコウ］", a:"長江", w:"長江", m:"中国でいちばんながい大河", e:"長江の流域では古くから稲作が行われてきた。"},
+  {t:'k', q:"［カジュウ］", a:"果汁", w:"果汁", m:"くだものをしぼったしる", e:"果汁百パーセントのジュースを飲んだ。"},
+  {t:'k', q:"［マサツ］", a:"摩擦", w:"摩擦", m:"こすれ合うこと。また、意見の食い違いによる争い", e:"物理の授業で摩擦力を学んだ。"},
+  {t:'k', q:"［モギ］", a:"模擬", w:"模擬", m:"本物に似せて行うこと", e:"来週、模擬試験がある。"},
+  {t:'k', q:"［ボクメツ］", a:"撲滅", w:"撲滅", m:"完全になくすこと", e:"いじめ撲滅を目指して標語を作った。"},
+  {t:'k', q:"［テッキョ］", a:"撤去", w:"撤去", m:"取り除くこと", e:"駅前の放置自転車が撤去された。"},
+  {t:'k', q:"［トウジョウ］", a:"搭乗", w:"搭乗", m:"飛行機や船などにのりこむこと", e:"修学旅行で飛行機に搭乗した。"},
+  {t:'k', q:"［ス］える", a:"据", w:"据える", m:"物を動かないように置く。ある地位につかせる", e:"新しいピアノを音楽室に据えた。"},
+  {t:'k', q:"［ソウニュウ］", a:"挿入", w:"挿入", m:"中に差し込むこと", e:"レポートの文章に図を挿入する。"},
+  {t:'k', q:"［ソウサク］", a:"捜索", w:"捜索", m:"人や物を探し求めること", e:"山で行方不明になった人の捜索が続いた。"},
+  {t:'k', q:"［チョウセン］", a:"挑戦", w:"挑戦", m:"困難なことに立ち向かうこと", e:"新しい技に挑戦する。"},
+  {t:'k', q:"［ゴウモン］", a:"拷問", w:"拷問", m:"苦痛を与えて自白などを強いること", e:"拷問は国際条約で禁止されている。"},
+  {t:'k', q:"［キョウゲキ］", a:"挟撃", w:"挟撃", m:"両側からはさみ打ちにすること", e:"戦国時代の合戦で敵を挟撃した。"},
+  {t:'k', q:"［イッカツ］", a:"一括", w:"一括", m:"ひとまとめにすること", e:"書類を一括して提出する。"},
+  {t:'k', q:"［マッショウ］", a:"抹消", w:"抹消", m:"記録などをけし去ること", e:"登録を抹消する手続きをした。"},
+  {t:'k', q:"［ヒロウ］", a:"披露", w:"披露", m:"広く人々に見せたり知らせたりすること", e:"文化祭でダンスを披露した。"},
+  {t:'k', q:"［コウセツ］", a:"巧拙", w:"巧拙", m:"うまいことと下手なこと", e:"字の巧拙より、ていねいさが大切だ。"},
+  {t:'k', q:"［キョヒ］", a:"拒否", w:"拒否", m:"要求や申し出をことわること", e:"不審な誘いははっきり拒否しよう。"},
+  {t:'k', q:"［ツウギョウ］", a:"通暁", w:"通暁", m:"ある物事についてくわしく知っていること", e:"彼は地元の歴史に通暁している。"},
+  {t:'k', q:"［センリツ］", a:"旋律", w:"旋律", m:"音の高低やリズムの流れ。メロディー", e:"合唱曲の美しい旋律が体育館に響いた。"},
+  {t:'k', q:"［イチグウ］", a:"一隅", w:"一隅", m:"片方のすみ。かたすみ", e:"教室の一隅に学級文庫を置いた。"},
+  {t:'k', q:"［ケッカン］", a:"欠陥", w:"欠陥", m:"足りないところ。不備", e:"製品に欠陥が見つかり回収された。"},
+  {t:'k', q:"［キフ］", a:"寄附", w:"寄附", m:"公共のためにお金や物を差し出すこと", e:"卒業生が図書室に本を寄附した。"},
+  {t:'k', q:"［ケンジョウ］", a:"献上", w:"献上", m:"身分の高い人に物をさしあげること", e:"地元の特産品を皇室に献上した。"},
+  {t:'k', q:"［ケンエン］", a:"犬猿", w:"犬猿", m:"仲が非常に悪いこと", e:"あの二人は昔から犬猿の仲だ。"},
+  {t:'k', q:"［ユウヨ］", a:"猶予", w:"猶予", m:"実行の日時を先にのばすこと", e:"提出期限まで一週間の猶予がある。"},
+  {t:'k', q:"［アイビョウ］", a:"愛猫", w:"愛猫", m:"かわいがっている飼いねこ", e:"作家が愛猫と暮らす様子を描いた随筆を読んだ。"},
+  {t:'k', q:"［アンタイ］", a:"安泰", w:"安泰", m:"無事で、やすらかなこと", e:"新キャプテンがいればチームは安泰だ。"},
+  {t:'k', q:"［センタク］", a:"洗濯", w:"洗濯", m:"衣類などをあらってきれいにすること", e:"部活のユニフォームを洗濯する。"},
+  {t:'k', q:"［ツケモノ］", a:"漬物", w:"漬物", m:"野菜などを塩やぬかにつけた食品", e:"祖母が作る漬物は絶品だ。"},
+  {t:'k', q:"［ゼンゾウ］", a:"漸増", w:"漸増", m:"少しずつふえること", e:"朝読書をする生徒が漸増している。"},
+  {t:'k', q:"［シッキ］", a:"漆器", w:"漆器", m:"うるしを塗った、わんなどの工芸品", e:"伝統工芸の漆器を見学した。"},
+  {t:'k', q:"［サバク］", a:"砂漠", w:"砂漠", m:"雨が少なく、すなや岩ばかりの土地", e:"サハラ砂漠は世界最大級の砂漠だ。"},
+  {t:'k', q:"［カイコウ］", a:"海溝", w:"海溝", m:"深いうみの底にある細長い谷", e:"日本海溝は太平洋の海底にある。"},
+  {t:'k', q:"［カチュウ］", a:"渦中", w:"渦中", m:"もめごとや事件のまっただなか", e:"騒ぎの渦中にいる人物が会見した。"},
+  {t:'k', q:"［コウリョウ］", a:"荒涼", w:"荒涼", m:"あれはてて、ものさびしいこと", e:"冬の海は荒涼としていた。"},
+  {t:'k', q:"［コウショウ］", a:"交渉", w:"交渉", m:"相手と話し合って取り決めること", e:"練習試合の日程を他校と交渉した。"},
+  {t:'k', q:"［シシュク］", a:"私淑", w:"私淑", m:"直接教えは受けないが、ひそかにその人を師と仰いで学ぶこと", e:"尊敬する作家に私淑している。"},
+  {t:'k', q:"［ジュウタイ］", a:"渋滞", w:"渋滞", m:"物事がつかえて進まないこと", e:"道路の渋滞でバスが遅れた。"},
+  {t:'k', q:"［ケイリュウ］", a:"渓流", w:"渓流", m:"谷川のながれ", e:"夏休みに渓流で釣りを楽しんだ。"},
+  {t:'k', q:"［カツボウ］", a:"渇望", w:"渇望", m:"心から強くのぞむこと", e:"選手たちは初優勝を渇望している。"},
+  {t:'k', q:"［テンガイ］", a:"天涯", w:"天涯", m:"空のはて。遠く離れた土地", e:"天涯孤独の主人公が仲間と出会う物語を読んだ。"},
+  {t:'k', q:"［ハッショウ］", a:"発祥", w:"発祥", m:"物事が起こり始めること", e:"文明発祥の地を地図で確かめた。"},
+  {t:'k', q:"［キンセン］", a:"琴線", w:"琴線", m:"（「心のきんせんに触れる」の形で）心の奥の感じやすい気持ち", e:"先輩の言葉が心の琴線に触れた。"},
+  {t:'k', q:"［ギョジ］", a:"御璽", w:"御璽", m:"天皇の印", e:"公文書には御璽が押される。"},
+  {t:'k', q:"［シュギョク］", a:"珠玉", w:"珠玉", m:"美しく価値の高いもののたとえ", e:"珠玉の短編小説を読んだ。"},
+  {t:'k', q:"［ボンノウ］", a:"煩悩", w:"煩悩", m:"心身をなやませる欲望", e:"除夜の鐘は百八の煩悩を払うといわれる。"},
+  {t:'k', q:"［ジュンショク］", a:"殉職", w:"殉職", m:"仕事のために命を落とすこと", e:"殉職した消防士を追悼した。"},
+  {t:'k', q:"［サイバイ］", a:"栽培", w:"栽培", m:"植物を植えて育てること", e:"学校の畑でサツマイモを栽培している。"},
+  {t:'k', q:"［スイソウ］", a:"水槽", w:"水槽", m:"みずをためておく容器", e:"理科室の水槽でメダカを飼っている。"},
+  {t:'k', q:"［ビョウトウ］", a:"病棟", w:"病棟", m:"入院用の部屋が並ぶ建物", e:"祖父が入院している病棟を訪ねた。"},
+  {t:'k', q:"［ホンダナ］", a:"本棚", w:"本棚", m:"書物を並べておくたな", e:"学級文庫の本棚を整理した。"},
+  {t:'k', q:"［セッカン］", a:"石棺", w:"石棺", m:"いしで作ったひつぎ", e:"古墳の中から石棺が見つかった。"},
+  {t:'k', q:"［モトセン］", a:"元栓", w:"元栓", m:"ガスや水道の大もとのせん", e:"実験が終わったらガスの元栓を閉めよう。"},
+  {t:'k', q:"［サンバシ］", a:"桟橋", w:"桟橋", m:"船を横付けするため、水上に突き出して作った構造物", e:"フェリーが桟橋に着いた。"},
+  {t:'k', q:"［カクシン］", a:"核心", w:"核心", m:"物事のいちばん大事な中身", e:"話し合いの核心に触れる発言だった。"},
+  {t:'k', q:"［センリュウ］", a:"川柳", w:"川柳", m:"五・七・五で人情や世相をおもしろく詠む短い詩", e:"国語の授業で川柳を作った。"},
+  {t:'k', q:"［ワク］", a:"枠", w:"枠", m:"物のまわりを囲むもの。範囲", e:"解答は枠の中に書くこと。"},
+  {t:'k', q:"［ブンセキ］", a:"分析", w:"分析", m:"物事を細かい要素にわけて調べること", e:"試合の映像を分析して作戦を立てた。"},
+  {t:'k', q:"［スウヨウ］", a:"枢要", w:"枢要", m:"組織などのいちばん大切なところ。かなめ", e:"彼は生徒会の枢要な役割を担っている。"},
+  {t:'k', q:"［スギ］", a:"杉", w:"杉", m:"まっすぐに高く伸びる常緑の針葉樹", e:"春になると杉の花粉が飛ぶ。"},
+  {t:'k', q:"［ジュンボク］", a:"純朴", w:"純朴", m:"素直で飾り気がないこと", e:"純朴な人柄で誰からも好かれている。"},
+  {t:'k', q:"［コウテイ］", a:"肯定", w:"肯定", m:"そうだと認めること", e:"自分を肯定する気持ちを大切にしよう。"},
+  {t:'k', q:"［フショウ］", a:"不肖", w:"不肖", m:"自分をへりくだっていう語", e:"不肖ながら、キャプテンを務めさせていただきます。"},
+  {t:'k', q:"［ゼンシ］", a:"前肢", w:"前肢", m:"動物のまえあし", e:"カエルの前肢と後肢を観察した。"},
+  {t:'k', q:"［ハダミ］", a:"肌身", w:"肌身", m:"はだ。からだ", e:"お守りを肌身離さず持っている。"},
+  {t:'k', q:"［チン］", a:"朕", w:"朕", m:"天子・天皇が自分を指して使った語", e:"歴史の史料に「朕」という言葉が出てきた。"},
+  {t:'k', q:"［コンブ］", a:"昆布", w:"昆布", m:"海でとれる褐色の海藻", e:"昆布でだしをとる。"},
+  {t:'y', q:"［渇仰］", a:["かつごう", "かつぎょう"], m:"心から深くあこがれ慕うこと", e:"多くの人々が渇仰した名僧の伝記を読んだ。"},
+  {t:'y', q:"［津々浦々］", a:["つつうらうら"], m:"全国いたるところ", e:"応援のメッセージが全国津々浦々から届いた。"},
+  {t:'y', q:"［泥酔］", a:["でいすい"], m:"正体をなくすほどひどく酒に酔うこと", e:"泥酔は体に大きな負担をかける。"},
+  {t:'y', q:"［相撲］", a:["すもう"], m:"土俵の上で二人が組み合う日本の伝統的な競技", e:"体育の授業で相撲を取った。"},
+  {t:'y', q:"［江湖］", a:["こうこ", "ごうこ"], m:"世の中。世間", e:"その本は広く江湖に読まれた。"},
+  {t:'y', q:"［苦汁］", a:["くじゅう"], m:"にがい経験（「苦汁をなめる」の形で）", e:"昨年は初戦敗退の苦汁をなめた。"},
+  {t:'y', q:"［拙速］", a:["せっそく"], m:"出来はよくないが、仕上がりが早いこと", e:"拙速な判断を避け、よく話し合おう。"},
+  {t:'y', q:"［拐帯］", a:["かいたい"], m:"預かった金品を持ち逃げすること", e:"会社の金を拐帯した事件が報じられた。"},
+  {t:'y', q:"［恭悦至極］", a:["きょうえつしごく"], m:"この上なく、つつしんで喜ぶこと", e:"時代劇で家臣が「恭悦至極に存じます」と述べた。"},
+  {t:'y', q:"［因循姑息］", a:["いんじゅんこそく"], m:"古い習慣にとらわれ、その場しのぎで済ませること", e:"因循姑息なやり方では問題は解決しない。"},
+  {t:'y', q:"［述懐］", a:["じゅっかい"], m:"心の中の思いや思い出を述べること", e:"卒業式で校長先生が三年間を述懐した。"},
+  {t:'y', q:"［懐］", a:["ふところ"], m:"胸のあたり。衣服と胸の間", e:"冷えないように手を懐に入れた。"},
+  {t:'y', q:"［下弦］", a:["かげん"], m:"満月のあとに欠けていく半月", e:"明け方の空に下弦の月が見えた。"},
+  {t:'y', q:"［幣制］", a:["へいせい"], m:"貨幣に関する制度", e:"明治政府は幣制を改革した。"},
+  {t:'y', q:"［妥当］", a:["だとう"], m:"実情によく当てはまり、適切なこと", e:"妥当な結論を出すために資料を集めた。"},
+  {t:'y', q:"［嗣子］", a:["しし"], m:"家をつぐ子。あとつぎ", e:"嗣子のいない大名家は取りつぶされることがあった。"},
+  {t:'y', q:"［可塑性］", a:["かそせい"], m:"力を加えると形が変わり、そのままの形を保つ性質", e:"粘土には可塑性がある。"},
+  {t:'y', q:"［口唇］", a:["こうしん"], m:"くちびる", e:"口唇の乾燥にはリップクリームが効く。"},
+  {t:'y', q:"［自堕落］", a:["じだらく"], m:"だらしなく、しまりがないこと", e:"長期休みも自堕落な生活にならないようにしよう。"},
+  {t:'y', q:"［筆塚］", a:["ふでづか"], m:"使い古した筆を供養して埋めた塚", e:"寺の境内に筆塚がある。"},
+  {t:'y', q:"［呉越同舟］", a:["ごえつどうしゅう"], m:"仲の悪い者同士が同じ場所にいたり、協力したりすること", e:"ライバル校同士が呉越同舟で合同練習をした。"},
+  {t:'y', q:"［唯物論］", a:["ゆいぶつろん"], m:"物質を世界の根本とする考え方", e:"倫理の授業で唯物論を学んだ。"},
+  {t:'y', q:"［但し書き］", a:["ただしがき"], m:"本文に条件や例外を付け加えた文", e:"申込書は但し書きまでよく読もう。"},
+  {t:'y', q:"［儒家］", a:["じゅか"], m:"孔子の教えを学び伝える学派の人々", e:"孟子は儒家の代表的な思想家だ。"},
+  {t:'y', q:"［伯母］", a:["おば"], m:"父や母の姉", e:"伯母の家に泊まりに行った。"},
+  {t:'y', q:"［伯父］", a:["おじ"], m:"父や母の兄", e:"伯父は漁師をしている。"},
+  {t:'y', q:"［貼付］", a:["ちょうふ", "てんぷ"], m:"はりつけること", e:"申込書に写真を貼付する。"},
+  {t:'y', q:"［貪欲］", a:["どんよく"], m:"非常に欲が深いこと", e:"新しい知識を貪欲に吸収する。"},
+  {t:'y', q:"［謎］", a:["なぞ"], m:"不思議で、わけのわからないこと", e:"推理小説の謎を最後まで解けなかった。"},
+  {t:'y', q:"［諦観］", a:["ていかん"], m:"本質をはっきり見きわめること。また、悟ってあきらめること", e:"主人公の諦観に満ちた言葉が印象に残った。"},
+  {t:'y', q:"［俳諧］", a:["はいかい"], m:"こっけいを主とした連歌から発達した文芸。俳句のもと", e:"松尾芭蕉は俳諧を芸術に高めた。"},
+  {t:'y', q:"［誰］", a:["だれ"], m:"名前のわからない人をさす語", e:"これは誰の忘れ物ですか。"},
+  {t:'y', q:"［詮索］", a:["せんさく"], m:"細かいところまで調べ求めること", e:"人のうわさを詮索しない。"},
+  {t:'y', q:"［参詣］", a:["さんけい"], m:"神社や寺にお参りすること", e:"初詣で近所の神社に参詣した。"},
+  {t:'y', q:"［訃報］", a:["ふほう"], m:"人が亡くなったという知らせ", e:"恩師の訃報に接した。"},
+  {t:'y', q:"［羨望］", a:["せんぼう"], m:"うらやましく思うこと", e:"全国大会出場は羨望の的だ。"},
+  {t:'y', q:"［羞恥心］", a:["しゅうちしん"], m:"はずかしいと思う気持ち", e:"羞恥心を乗り越えて人前で発表した。"},
+  {t:'y', q:"［蜂起］", a:["ほうき"], m:"大勢がいっせいに立ち上がり、反乱などを起こすこと", e:"歴史の授業で農民の蜂起について学んだ。"},
+  {t:'y', q:"［虹］", a:["にじ"], m:"雨上がりの空に見える七色の帯", e:"雨上がりの校庭に虹がかかった。"},
+  {t:'y', q:"［蜜］", a:["みつ"], m:"花などから出る甘い液", e:"ミツバチが花の蜜を集めている。"},
+  {t:'y', q:"［虎］", a:["とら"], m:"ネコ科の大型の猛獣", e:"動物園で虎を見た。"},
+  {t:'y', q:"［煩う］", a:["わずらう"], m:"思い悩む。心配する", e:"あれこれ思い煩うより、まず行動しよう。"},
+  {t:'y', q:"［桟敷］", a:["さじき"], m:"見物のために一段高く作った席", e:"大相撲を桟敷席で観戦した。"},
+  {t:'y', q:"［棟木］", a:["むなぎ"], m:"屋根のいちばん高い所に渡す木", e:"新築の家の棟木が上がった。"},
+  {t:'y', q:"［朴念仁］", a:["ぼくねんじん"], m:"無口で愛想がなく、人の気持ちにうとい人", e:"彼は朴念仁に見えて、実は気配りができる。"},
+  {t:'y', q:"［結核］", a:["けっかく"], m:"結核菌による感染症", e:"保健の授業で結核の予防について学んだ。"},
+  {t:'y', q:"［地肌］", a:["じはだ"], m:"化粧などをしていない肌。頭皮", e:"シャンプーで頭の地肌を洗う。"},
+  {t:'y', q:"［渋面］", a:["じゅうめん"], m:"不愉快そうな顔つき", e:"監督は渋面で試合を見ていた。"},
+  {t:'y', q:"［附帯］", a:["ふたい"], m:"主となるものに付け加わること", e:"附帯条件をよく確認する。"},
+  {t:'y', q:"［渦紋］", a:["かもん"], m:"うずまきの模様", e:"土器に渦紋が描かれている。"},
+  {t:'y', q:"［泰然］", a:["たいぜん"], m:"落ち着いていて動じないさま", e:"ピンチでも泰然としている主将は頼もしい。"},
+  {t:'y', q:"［今暁］", a:["こんぎょう"], m:"今日の明け方", e:"今暁、県内で地震があった。"},
+  {t:'y', q:"［艶冶］", a:["えんや"], m:"なまめかしく美しいこと", e:"美術館で艶冶な美人画を見た。"},
+  {t:'y', q:"［袖手］", a:["しゅうしゅ"], m:"手を袖に入れて何もしないこと（「袖手傍観」の形で）", e:"困っている友人を袖手傍観するわけにはいかない。"},
+  {t:'y', q:"［臼杵］", a:["うすきね", "うすき"], m:"うすときね（地名では「うすき」）", e:"祭りで臼杵を使って餅をついた。"},
+  {t:'y', q:"［虎視眈眈］", a:["こしたんたん"], m:"機会をじっとうかがうさま", e:"優勝を虎視眈眈とねらっている。"},
+  {t:'y', q:"［籠手］", a:["こて"], m:"剣道などで手や腕を守る防具", e:"剣道の試合で相手の籠手を打った。"},
+  {t:'y', q:"［付箋］", a:["ふせん"], m:"メモなどを書いて貼る小さな紙", e:"大事なページに付箋を貼った。"},
+  {t:'y', q:"［釜］", a:["かま"], m:"飯をたいたり湯をわかしたりする器", e:"釜で炊いたご飯はおいしい。"},
+  {t:'y', q:"［変貌］", a:["へんぼう"], m:"姿や様子がすっかり変わること", e:"駅前の町並みが大きく変貌した。"},
+  {t:'y', q:"［麺］", a:["めん"], m:"うどんやそばなど、細長く伸ばした食品", e:"学食で好きな麺を選ぶ。"},
+  {t:'y', q:"［喝采］", a:["かっさい"], m:"大声でほめそやすこと", e:"演奏が終わると観客から喝采が起こった。"},
+  {t:'y', q:"［覚醒］", a:["かくせい"], m:"目を覚ますこと。迷いからさめること", e:"一本のスパイクでチームが覚醒した。"},
+  {t:'y', q:"［焼酎］", a:["しょうちゅう"], m:"米・麦・芋などから作る蒸留酒", e:"焼酎は二十歳になるまで飲めないお酒だ。"},
+  {t:'y', q:"［辣腕］", a:["らつわん"], m:"物事をてきぱきと処理する腕前があること", e:"辣腕の生徒会長が行事をまとめた。"},
+  {t:'y', q:"［一蹴］", a:["いっしゅう"], m:"はねつけること。簡単に打ち負かすこと", e:"強豪校が相手を一蹴した。"},
+  {t:'y', q:"［失踪］", a:["しっそう"], m:"行方をくらますこと", e:"小説の主人公が突然失踪する。"},
+  {t:'y', q:"［賭博］", a:["とばく"], m:"金品をかけて勝負をすること", e:"賭博は法律で禁止されている。"},
+  {t:'y', q:"［賄賂］", a:["わいろ"], m:"自分に有利になるよう不正に贈る金品", e:"賄賂を受け取った政治家が逮捕された。"}
+];
+/* ====================================================== */
+
+const EXTEND_MIN = [1, 3, 5];   // 時間切れのときに選べる延長
+const REVIVE_GAP = 3;        // 間違えた問題は3問あとに「復活戦」で出す
+const STAGE_SIZE = 20;       // 1ステージの語数の目安（範囲を等分する）
+
+/* ステージ：書き・読みをそれぞれ用紙の順に約20語ずつ区切る。
+   「ぜんぶ」のときは書き2つ→読み1つの割合で並べる（本番の15：5に近い） */
+function makeStages(){
+  const split = (t, name) => {
+    const ix = QUESTIONS.map((q, i) => q.t === t ? i : -1).filter(i => i >= 0);
+    const n = Math.max(1, Math.ceil(ix.length / STAGE_SIZE)), out = [];
+    for(let k = 0; k < n; k++){
+      const a = Math.round(ix.length * k / n), b = Math.round(ix.length * (k + 1) / n);
+      out.push({id: t + (k + 1), t, name: name + (k + 1), ix: ix.slice(a, b), at: (k + 1) / n});
+    }
+    return out;
+  };
+  return [...split('k', '書き'), ...split('y', '読み')].sort((a, b) => a.at - b.at || (a.t === 'k' ? -1 : 1));
+}
+const STAGES = makeStages();
+const KEY = 'jokan:' + TEST.id;
+
+/* ---------- 記録（このスマホの中だけ） ---------- */
+function load(){
+  try{ const s = JSON.parse(localStorage.getItem(KEY)); if(s && s.items) return s; }catch(e){}
+  return {items:{}, days:[], mockBest:null, sessions:0};
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+let S = load();
+if(!['all','k','y'].includes(S.only)) S.only = 'all';   // トレーニングで出す種類（ぜんぶ／書きだけ／読みだけ）
+if(!(S.min >= 1 && S.min <= 30)) S.min = 10;            // トレーニングの時間（分・1〜30）
+if(!S.stages) S.stages = {};                              // ステージの進み具合 {id: {done:[問題番号], miss, cleared, perfect}}
+const sg = id => S.stages[id] || (S.stages[id] = {done:[], miss:0, cleared:false, perfect:false});
+const stageById = id => STAGES.find(x => x.id === id);
+const myStages = () => STAGES.filter(x => S.only === 'all' || x.t === S.only);
+function nextStage(){ return myStages().find(x => !sg(x.id).cleared) || null; }
+const st = i => S.items[i] || (S.items[i] = {seen:0, ok:0, streak:0, last:null});
+
+/* 覚えた＝2回続けて正解／あと少し＝直近が正解／苦手＝直近が不正解 */
+function level(i){
+  const s = S.items[i];
+  if(!s || !s.seen) return -1;
+  if(s.streak >= 2) return 2;
+  if(s.streak === 1) return 1;
+  return 0;
+}
+/* 予想点：書き・読みそれぞれの仕上がり（覚えた＝1・あと少し＝0.5）を、本番の問題数の割合で合わせる */
+function predicted(){
+  const part = t => {
+    const idx = QUESTIONS.map((q, i) => q.t === t ? i : -1).filter(i => i >= 0);
+    if(!idx.length) return 0;
+    let v = 0; idx.forEach(i => { const l = level(i); v += l === 2 ? 1 : l === 1 ? 0.5 : 0; });
+    return v / idx.length;
+  };
+  const n = TEST.mockKaki + TEST.mockYomi;
+  return Math.round(TEST.full * (part('k') * TEST.mockKaki + part('y') * TEST.mockYomi) / n);
+}
+function mastered(){ return QUESTIONS.filter((_, i) => level(i) === 2).length; }
+function almost(){ return QUESTIONS.filter((_, i) => level(i) === 1).length; }
+function today(){ const d = new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function streakDays(){
+  const set = new Set(S.days); let n = 0; const d = new Date();
+  if(!set.has(today())) d.setDate(d.getDate()-1);   // 今日まだなら昨日から数える
+  while(true){
+    const k = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(!set.has(k)) break; n++; d.setDate(d.getDate()-1);
+  }
+  return n;
+}
+function daysLeft(){
+  const t = new Date(TEST.date + 'T00:00:00'); const n = new Date(); n.setHours(0,0,0,0);
+  return Math.round((t - n) / 86400000);
+}
+function record(i, ok){
+  const s = st(i); s.seen++; s.last = Date.now();
+  // 「覚えた」は別の回で2回続けて正解したとき。同じ回の中で何度正解しても連続は1つしか進めない
+  if(ok){ s.ok++; if(!(R && R.counted.has(i))) s.streak++; } else { s.streak = 0; }
+  if(R) R.counted.add(i);
+  if(!S.days.includes(today())) S.days.push(today());
+  save();
+}
+
+/* ---------- 文字の扱い ---------- */
+function norm(x){
+  return String(x).normalize('NFKC')
+    .replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60))
+    .replace(/[\s。、．，.,・]/g, '');
+}
+function esc(x){ return String(x).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function sentence(q){ return esc(q).replace(/［(.+?)］/g, '<u>$1</u>'); }
+function solo(q){ return /^［[^］]+］[ぁ-ゖ]*$/.test(q) ? ' solo' : ''; }
+function filled(item){   // 書きの答えを入れた文（カタカナ部分を漢字に置き換え）
+  if(item.t !== 'k') return item.q.replace(/［|］/g,'');
+  return item.q.replace(/［.+?］/, item.a);
+}
+function extra(item){
+  if(!item.m && !item.e) return '';
+  const word = item.t === 'y' ? item.q.replace(/［|］/g, '') : (item.w || item.a);
+  let ex = item.e ? esc(item.e) : '';
+  for(const k of [word, item.a].filter(x => typeof x === 'string')){
+    if(item.e && item.e.includes(k)){ ex = esc(item.e).replace(esc(k), '<mark>' + esc(k) + '</mark>'); break; }
+  }
+  return `<div class="ex">${item.m ? `<div><b>意味</b>${esc(item.m)}</div>` : ''}${ex ? `<div><b>例文</b>${ex}</div>` : ''}</div>`;
+}
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+/* ---------- 画面 ---------- */
+const app = document.getElementById('app');
+let timerId = null;
+function stopTimer(){ if(timerId){ clearInterval(timerId); timerId = null; } }
+
+function home(){
+  stopTimer();
+  const p = predicted(), left = daysLeft(), m = mastered(), nx = nextStage();
+  const passPct = Math.min(100, TEST.pass / TEST.full * 100);
+  const msg = p >= TEST.pass ? '合格ライン突破圏！ このまま固めよう'
+            : `合格ラインまで あと <b>${TEST.pass - p}点</b>`;
+  app.innerHTML = `
+    <h1>常漢勝つぞ</h1>
+    <div class="muted">${esc(TEST.title)}（${esc(TEST.range || '')}）<br>${left > 0 ? `本番まで あと<b>${left}日</b>` : left === 0 ? '<b>今日が本番！</b>' : '本番は終わりました'}</div>
+    ${TEST.sample ? '<div class="banner">いまはサンプル問題です。本番の範囲はもうすぐ入ります。</div>' : ''}
+    <div class="card">
+      <div class="muted">いまの予想点（${TEST.full}点満点）</div>
+      <div class="big">${p}<span style="font-size:20px">点</span></div>
+      <div class="meter"><div class="fill" style="width:${p / TEST.full * 100}%"></div>
+        <div class="pass" style="left:${passPct}%"><span>合格 ${TEST.pass}点</span></div></div>
+      <div>${msg}</div>
+    </div>
+    <div class="seg" id="only">
+      <button data-v="all" class="${S.only === 'all' ? 'on' : ''}">ぜんぶ</button>
+      <button data-v="k" class="${S.only === 'k' ? 'on' : ''}">書きだけ</button>
+      <button data-v="y" class="${S.only === 'y' ? 'on' : ''}">読みだけ</button>
+    </div>
+    <div class="stepper">
+      <span class="muted">時間</span>
+      <button id="minus" aria-label="1分へらす">−</button>
+      <b id="min">${S.min}分</b>
+      <button id="plus" aria-label="1分ふやす">＋</button>
+    </div>
+    <button class="btn" id="go">▶ ${nx ? `${esc(nx.name)}に挑戦（${sg(nx.id).done.length}/${nx.ix.length}）` : '復習トレーニング'}</button>
+    <div class="map">${myStages().map(x => { const g = sg(x.id);
+      return `<button data-st="${x.id}" class="${g.cleared ? 'clr' : ''}${nx && nx.id === x.id ? ' now' : ''}">${esc(x.name)}<small>${
+        g.perfect ? '👑 ノーミス' : g.cleared ? '✓ クリア' : `${g.done.length}/${x.ix.length}`}</small></button>`; }).join('')}</div>
+    <div class="muted" style="text-align:center">${nx ? 'ステージは押して選び直せる（クリアしたステージはやり直し）' : '🎉 ぜんぶのステージをクリア！ いまは苦手な字から出る復習モード'}</div>
+    <div class="row">
+      <button class="btn sub" id="mock">本番模試</button>
+      <button class="btn sub" id="zukan">ずかん</button>
+    </div>
+    <div class="card stats">
+      <div><b>${m}/${QUESTIONS.length}</b><span>覚えた</span></div>
+      <div><b>${streakDays()}日</b><span>連続</span></div>
+      <div><b>${S.mockBest === null ? '—' : S.mockBest + '点'}</b><span>模試ベスト</span></div>
+    </div>
+    <p class="muted">記録はこのスマホの中だけに残ります。</p>`;
+  document.querySelectorAll('#only button').forEach(b => b.onclick = () => { S.only = b.dataset.v; save(); home(); });
+  const setMin = d => { S.min = Math.min(30, Math.max(1, S.min + d)); save(); document.getElementById('min').textContent = S.min + '分'; };
+  document.getElementById('minus').onclick = () => setMin(-1);
+  document.getElementById('plus').onclick = () => setMin(1);
+  document.getElementById('go').onclick = () => startRun('train', nx ? nx.id : null);
+  document.querySelectorAll('[data-st]').forEach(b => b.onclick = () => {
+    const g = sg(b.dataset.st);
+    if(g.cleared){ g.done = []; g.miss = 0; save(); }   // クリア済みはやり直し（クリアの記録は残す）
+    startRun('train', b.dataset.st);
+  });
+  document.getElementById('mock').onclick = () => startRun('mock');
+  document.getElementById('zukan').onclick = zukan;
+}
+
+/* 出す順：苦手 → まだ出ていない → あと少し → 覚えた（それぞれの中はシャッフル） */
+function trainQueue(){
+  const g = {0:[], '-1':[], 1:[], 2:[]};
+  QUESTIONS.forEach((q, i) => { if(S.only === 'all' || q.t === S.only) g[level(i)].push(i); });
+  return [...shuffle(g[0]), ...shuffle(g[-1]), ...shuffle(g[1]), ...shuffle(g[2])];
+}
+/* 本番模試：本番と同じく書き15問・読み5問（範囲が足りなければある分だけ） */
+function mockQueue(){
+  const pick = (t, n) => shuffle(QUESTIONS.map((q, i) => q.t === t ? i : -1).filter(i => i >= 0)).slice(0, n);
+  return shuffle([...pick('k', TEST.mockKaki), ...pick('y', TEST.mockYomi)]);
+}
+
+/* ステージの出題：まだ正解していない語をシャッフル */
+function stageQueue(id){
+  const g = sg(id);
+  return shuffle(stageById(id).ix.filter(i => !g.done.includes(i)));
+}
+function setStage(id){   // id=null で復習モード
+  R.stage = id;
+  R.queue = (id ? stageQueue(id) : trainQueue()).map(i => ({i, revive:false}));
+  R.pos = 0;
+}
+
+let R = null;   // 実行中の回
+function startRun(mode, stageId){
+  const before = predicted();
+  R = {mode, stage:null, clears:[], queue: mode === 'train' ? [] : mockQueue().map(i => ({i, revive:false})),
+       pos:0, counted:new Set(), right:0, total:0, combo:0, maxCombo:0, before, masteredBefore: mastered(),
+       end: Date.now() + S.min * 60000, minutes: S.min, timeUp:false};
+  if(mode === 'train'){
+    setStage(stageId || null);
+    timerId = setInterval(tick, 250);
+  }
+  show();
+}
+function clock(){
+  const sec = Math.max(0, Math.ceil((R.end - Date.now()) / 1000));
+  return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+}
+function tick(){
+  const t = document.getElementById('timer'); if(!t) return;
+  const sec = Math.max(0, Math.ceil((R.end - Date.now()) / 1000));
+  t.textContent = clock();
+  t.classList.toggle('low', sec <= 10);
+  if(sec === 0){ R.timeUp = true; stopTimer(); }
+}
+function header(cur){
+  const left = R.mode === 'train'
+    ? `<span class="timer" id="timer">${clock()}</span>`
+    : `<span>${R.pos + 1} / ${R.queue.length}</span>`;
+  const kind = cur.revive ? '<span class="kind revive">復活戦</span>'
+             : `<span class="kind">${QUESTIONS[cur.i].t === 'y' ? '読み' : '書き'}</span>`;
+  return `<div class="top">${left}${kind}<button class="btn sub" style="width:auto;margin:0;padding:6px 12px;font-size:14px" id="quit">やめる</button></div>
+          ${R.stage ? stageBar() : ''}
+          <div class="combo" id="combo">${R.combo >= 2 ? R.combo + 'コンボ！' : ''}</div>`;
+}
+function stageBar(){
+  const x = stageById(R.stage), d = sg(R.stage).done.length;
+  return `<div class="sbar"><span>${esc(x.name)}</span><div><i style="width:${d / x.ix.length * 100}%"></i></div><span>${d}/${x.ix.length}</span></div>`;
+}
+function show(){
+  if(R.mode === 'train' && R.timeUp) return askExtend();
+  if(R.mode === 'train' && R.stage && R.pos >= R.queue.length) setStage(R.stage);   // 念のため（通常はクリアで抜ける）
+  if(R.pos >= R.queue.length) return result();
+  const cur = R.queue[R.pos], item = QUESTIONS[cur.i];
+  if(item.t === 'y'){
+    app.innerHTML = `${header(cur)}
+      <div class="card">
+        <div class="ask">線の部分の読みを、ひらがなで</div>
+        <div class="q${solo(item.q)}">${sentence(item.q)}</div>
+        <form id="f" autocomplete="off">
+          <input class="ans" id="in" inputmode="text" lang="ja" enterkeyhint="done" placeholder="ひらがなで入力">
+          <button class="btn" type="submit">こたえる</button>
+        </form>
+        <button class="btn sub" id="pass">わからない</button>
+      </div>`;
+    const inp = document.getElementById('in');
+    inp.focus();
+    inp.addEventListener('keydown', e => { if(e.key === 'Enter' && (e.isComposing || e.keyCode === 229)) e.preventDefault(); });
+    document.getElementById('f').onsubmit = e => {
+      e.preventDefault();
+      const v = norm(inp.value); if(!v) return;
+      answered(item.a.some(a => norm(a) === v), inp.value);
+    };
+    document.getElementById('pass').onclick = () => answered(false, '');
+  }else{
+    app.innerHTML = `${header(cur)}
+      <div class="card">
+        <div class="ask">線のカタカナを漢字にすると？ 頭の中で書いてから、答えを見よう</div>
+        <div class="q${solo(item.q)}">${sentence(item.q)}</div>
+        ${item.m ? `<div class="mean"><b>意味</b>${esc(item.m)}</div>` : ''}
+        <button class="btn" id="open">答えを見る</button>
+      </div>`;
+    document.getElementById('open').onclick = () => {
+      app.querySelector('.card').innerHTML = `
+        <div class="q${solo(item.q)}">${sentence(item.q)}</div>
+        <div class="answer">${esc(item.w || item.a)}</div>
+        ${item.w ? '' : `<div class="full">${esc(filled(item))}</div>`}
+        ${extra(item)}
+        <div class="row" style="margin-top:12px">
+          <button class="btn ok" id="y">わかった</button>
+          <button class="btn ng" id="n">わからなかった</button>
+        </div>`;
+      document.getElementById('y').onclick = () => next(true);
+      document.getElementById('n').onclick = () => next(false);
+    };
+  }
+  document.getElementById('quit').onclick = () => { if(R.total === 0) return home(); result(); };
+  if(R.mode === 'train') tick();
+}
+function answered(ok, typed){
+  const item = QUESTIONS[R.queue[R.pos].i];
+  const card = app.querySelector('.card');
+  card.innerHTML = `
+    <div class="q${solo(item.q)}">${sentence(item.q)}</div>
+    <div class="judge ${ok ? 'ok' : 'ng'}">${ok ? '○ 正解！' : (typed ? `× 「${esc(typed)}」ではなく` : '答えは')}</div>
+    ${ok ? `<div class="full">${item.a.map(esc).join(' ／ ')}</div>` : `<div class="answer" style="font-size:36px">${item.a.map(esc).join('<span class="muted"> ／ </span>')}</div>`}
+    ${extra(item)}
+    <button class="btn" id="nx">つぎへ</button>`;
+  const b = document.getElementById('nx'); b.focus();
+  b.onclick = () => next(ok, true);
+  bump(ok);
+}
+function bump(ok){
+  const c = document.getElementById('combo');
+  const n = ok ? R.combo + 1 : 0;
+  if(c){ c.textContent = n >= 2 ? n + 'コンボ！' : ''; if(n >= 2){ c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); } }
+  if(ok && navigator.vibrate) try{ navigator.vibrate(30); }catch(e){}
+}
+function next(ok, alreadyBumped){
+  const cur = R.queue[R.pos];
+  // 復活戦での正解は「あと少し」止まり（覚えたにはしない）
+  if(cur.revive && ok){ record(cur.i, true); st(cur.i).streak = 1; save(); }
+  else record(cur.i, ok);
+  R.total++;
+  if(ok){ R.right++; R.combo++; R.maxCombo = Math.max(R.maxCombo, R.combo); } else R.combo = 0;
+  if(!alreadyBumped) bump(ok);
+  if(!ok && R.mode === 'train'){
+    R.queue.splice(Math.min(R.pos + 1 + REVIVE_GAP, R.queue.length), 0, {i:cur.i, revive:true});
+  }
+  R.pos++;
+  if(R.mode === 'train' && R.stage){
+    const g = sg(R.stage), x = stageById(R.stage);
+    if(ok){ if(!g.done.includes(cur.i)) g.done.push(cur.i); } else g.miss++;
+    save();
+    if(g.done.length >= x.ix.length) return stageClear();
+  }
+  // 復習モードで全部出し切ったら、覚えていない問題からもう一周
+  if(R.mode === 'train' && !R.stage && R.pos >= R.queue.length && !R.timeUp){
+    const more = trainQueue().filter(i => level(i) < 2);
+    R.queue.push(...(more.length ? more : trainQueue()).map(i => ({i, revive:false})));
+  }
+  show();
+}
+/* ステージクリア：タイマーを止めて祝う。続けるなら残り時間から再開 */
+function stageClear(){
+  stopTimer();
+  const x = stageById(R.stage), g = sg(R.stage);
+  const first = !g.cleared;
+  g.cleared = true; if(g.miss === 0) g.perfect = true; save();
+  R.clears.push(x.name);
+  const left = Math.max(0, R.end - Date.now()), nx = nextStage();
+  app.innerHTML = `<h1>🎉 ステージクリア！</h1>
+    <div class="card center">
+      <div class="big pop">${esc(x.name)}</div>
+      <div style="margin-top:6px">${x.ix.length}語 ぜんぶ正解！</div>
+      ${g.miss === 0 ? '<div class="goal">👑 ノーミス！</div>' : `<div class="muted">まちがい ${g.miss}回 → 次はノーミスで👑</div>`}
+      ${first ? '' : '<div class="muted">（やり直しクリア）</div>'}
+    </div>
+    <button class="btn" id="nx">${nx ? `次へ：${esc(nx.name)}` : '復習モードへ'}${left > 0 ? `（残り ${clock()}）` : ''}</button>
+    <button class="btn sub" id="fin">終わる</button>`;
+  confetti();
+  document.getElementById('nx').onclick = () => {
+    R.end = Date.now() + left; R.timeUp = left <= 0;
+    setStage(nx ? nx.id : null);
+    if(!R.timeUp) timerId = setInterval(tick, 250);
+    show();
+  };
+  document.getElementById('fin').onclick = result;
+}
+/* 時間切れ：延長するか聞く（解いていた問題が終わってから出る） */
+function askExtend(){
+  stopTimer();
+  app.innerHTML = `<h1>⏰ 時間です！</h1>
+    <div class="card center">
+      <div class="muted">ここまで（${R.minutes}分）</div>
+      ${R.stage ? `<div style="margin:6px 0">${stageBar()}</div>` : ''}
+      <div class="big">${R.right}<span style="font-size:20px"> / ${R.total}問 正解</span></div>
+      <div style="margin-top:6px">延長する？</div>
+    </div>
+    <div class="row">${EXTEND_MIN.map(m => `<button class="btn" data-m="${m}">もう${m}分</button>`).join('')}</div>
+    <button class="btn sub" id="fin">終わる</button>`;
+  app.querySelectorAll('[data-m]').forEach(b => b.onclick = () => {
+    const m = +b.dataset.m;
+    R.end = Date.now() + m * 60000; R.minutes += m; R.timeUp = false;
+    if(R.pos >= R.queue.length && !R.stage){
+      const more = trainQueue().filter(i => level(i) < 2);
+      R.queue.push(...(more.length ? more : trainQueue()).map(i => ({i, revive:false})));
+    }
+    timerId = setInterval(tick, 250);
+    show();
+  });
+  document.getElementById('fin').onclick = result;
+}
+function result(){
+  stopTimer();
+  const after = predicted(), gained = mastered() - R.masteredBefore;
+  let body = '';
+  if(R.mode === 'mock'){
+    const score = Math.round(TEST.full * R.right / Math.max(1, R.queue.length));
+    const done = R.total === R.queue.length;
+    const best = S.mockBest;
+    if(done && (best === null || score > best)){ S.mockBest = score; save(); }
+    const passed = done && score >= TEST.pass;
+    body = `
+      <div class="muted">本番模試（${R.queue.length}問・${TEST.full}点満点に換算）${done ? '' : '※途中でやめたので記録しません'}</div>
+      <div class="big">${score}<span style="font-size:20px">点</span></div>
+      ${passed ? '<div class="goal pop">🎉 合格ライン突破！</div>' : `<div>合格まで あと <b>${Math.max(0, TEST.pass - score)}点</b></div>`}
+      ${done && best !== null && score > best ? `<div class="goal" style="font-size:20px">自己ベスト更新！（${best}点 → ${score}点）</div>` : ''}`;
+    if(passed) confetti();
+  }else{
+    body = `
+      <div class="muted">今日の${R.minutes}分</div>
+      <div class="big">${R.right}<span style="font-size:20px"> / ${R.total}問 正解</span></div>
+      <div>最高 <b>${R.maxCombo}</b> コンボ</div>
+      ${R.clears.length ? `<div class="goal" style="font-size:20px;margin-top:6px">クリア：${R.clears.map(esc).join('・')}</div>` : ''}
+      ${R.stage && !sg(R.stage).cleared ? `<div style="margin-top:6px">${stageBar()}</div><div class="muted">続きは次の回から</div>` : ''}
+      <div style="margin-top:8px">覚えた <b>${mastered()}</b>字（${gained >= 0 ? '+' : ''}${gained}）・あと少し <b>${almost()}</b>字</div>
+      <div class="muted">あと少しの字は、次の回でも正解すると「覚えた」になる</div>
+      <div>予想点 ${R.before}点 → <b>${after}点</b></div>
+      ${after >= TEST.pass && R.before < TEST.pass ? '<div class="goal pop">🎉 予想点が合格ラインを越えた！</div>' : ''}`;
+    if(after >= TEST.pass && R.before < TEST.pass) confetti();
+  }
+  app.innerHTML = `<h1>おつかれさま！</h1><div class="card center">${body}</div>
+    <button class="btn" id="home">トップへ</button>`;
+  document.getElementById('home').onclick = home;
+  R = null;
+}
+function zukan(){
+  const tiles = QUESTIONS.map((q, i) => {
+    const l = level(i), w = q.t === 'y' ? q.q.match(/［(.+?)］/)[1] : (q.w || q.a);
+    return `<div class="tile s${l}">${esc(w)}<small>${q.t === 'y' ? '読み' : '書き'}</small></div>`;
+  }).join('');
+  app.innerHTML = `<h1>ずかん</h1>
+    <div class="legend"><span><i style="background:var(--ok-bg)"></i>覚えた</span><span><i style="background:var(--gold-bg)"></i>あと少し</span>
+      <span><i style="background:var(--ng-bg)"></i>苦手</span><span><i style="border:1px solid var(--line)"></i>まだ</span></div>
+    <div class="grid">${tiles}</div>
+    <button class="btn" id="home">トップへ</button>`;
+  document.getElementById('home').onclick = home;
+}
+function confetti(){
+  const box = document.createElement('div'); box.className = 'confetti';
+  const colors = ['#ef4444','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ec4899'];
+  for(let k = 0; k < 80; k++){
+    const i = document.createElement('i');
+    i.style.left = Math.random() * 100 + 'vw';
+    i.style.background = colors[k % colors.length];
+    i.style.animationDuration = (1.8 + Math.random() * 1.6) + 's';
+    i.style.animationDelay = Math.random() * .6 + 's';
+    box.appendChild(i);
+  }
+  document.body.appendChild(box); setTimeout(() => box.remove(), 4500);
+}
+home();
+</script>
+</body>
+</html>
