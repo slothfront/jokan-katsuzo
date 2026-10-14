@@ -540,7 +540,7 @@ function kn(n){
 }
 /* 段：書き・読みを分けて、それぞれ用紙の順に20語ずつ（H2・本人選択 2026-10-14）。
    端数が5語以下なら最後の段に足す（21〜25語）。6語以上なら最後の2段で分け合う（書き152語＝20×6＋16＋16、読み69語＝20×2＋15＋14）。
-   「ぜんぶ」のときは書き2つ→読み1つの割合で並べる（本番の15：5に近い） */
+   「ぜんぶ」のときは読みの段を先に、そのあと書きの段（本人指示 2026-10-14「読みを先にやってから書きをやる」） */
 function stageSizes(L){
   const q = Math.floor(L / STAGE_SIZE), r = L % STAGE_SIZE;
   if(!q) return [L];
@@ -559,7 +559,7 @@ function makeStages(){
     });
     return out;
   };
-  return [...split('k', '書き'), ...split('y', '読み')].sort((a, b) => a.at - b.at || (a.t === 'k' ? -1 : 1));
+  return [...split('y', '読み'), ...split('k', '書き')];
 }
 const STAGES = makeStages();
 const KEY = 'jokan:' + TEST.id;
@@ -1084,7 +1084,7 @@ function goalScreen(first){
   if(!first) document.getElementById('back').onclick = home;
 }
 
-/* お試し2問（最初に1回だけ・手引きからもう一度）：書き1問・読み1問を、吹き出しの説明つきで。記録には残さない */
+/* お試し2問（最初に1回だけ・手引きからもう一度）：読み1問・書き1問を、吹き出しの説明つきで。記録には残さない */
 function trial(step){
   stopTimer(); clearFx(); window.scrollTo(0, 0);
   const ik = QUESTIONS.findIndex(q => q.t === 'k'), iy = QUESTIONS.findIndex(q => q.t === 'y');
@@ -1094,35 +1094,8 @@ function trial(step){
   const done = () => { S.trialDone = true; save(); };
   const bindSkip = () => { document.getElementById('tskip').onclick = () => { done(); home(); }; };
   if(step === 0){
-    const item = QUESTIONS[ik];
-    app.innerHTML = `${top(1)}
-      <div class="card">
-        <div class="ask">書きの問題</div>
-        <div class="q${solo(item.q)}">${sentence(item.q)}</div>
-        ${item.m ? `<div class="mean"><b>意味</b><span>${esc(item.m)}</span></div>` : ''}
-        ${coach('1', '線のカタカナを、<b>頭の中で漢字に</b>書いてみる（指や紙に書いてもOK）')}
-        ${coach('2', '書けたら（わからなくても）下のボタン')}
-        <button class="btn" id="open">答えを見る</button>
-      </div>`;
-    bindSkip();
-    document.getElementById('open').onclick = () => {
-      app.querySelector('.card').innerHTML = `
-        <div class="q${solo(item.q)}">${sentence(item.q)}</div>
-        ${chars(item)}
-        ${coach('3', `頭の中の字と1字ずつ見くらべる。<b>同じなら「正解」</b>、ちがう・迷ったら<b>「不正解」</b>を自分で押す`)}
-        <div class="row">
-          <button class="btn ok" id="y">正解</button>
-          <button class="btn ng" id="n"><span class="sym">×</span>不正解</button>
-        </div>`;
-      bindZoom();
-      document.getElementById('y').onclick = () => trial(1);
-      document.getElementById('n').onclick = () => trial(1);
-    };
-    return;
-  }
-  if(step === 1){
     const item = QUESTIONS[iy];
-    app.innerHTML = `${top(2)}
+    app.innerHTML = `${top(1)}
       <div class="card">
         <div class="ask">読みの問題</div>
         <div class="q${solo(item.q)}">${sentence(item.q)}</div>
@@ -1142,10 +1115,37 @@ function trial(step){
         <div class="answer" style="font-size:36px">${item.a.map(esc).join('<span class="muted"> ／ </span>')}</div>
         ${coach('2', '読みはアプリが自動で○×をつける。本番の稽古では、間違えた語は3問あとにもう一度出る')}
         <button class="btn" id="nx">つぎへ</button>`;
-      document.getElementById('nx').onclick = () => trial(2);
+      document.getElementById('nx').onclick = () => trial(1);
     };
     document.getElementById('f').onsubmit = e => { e.preventDefault(); const v = document.getElementById('in').value; if(norm(v)) fin(v); };
     document.getElementById('pass').onclick = () => fin('');
+    return;
+  }
+  if(step === 1){
+    const item = QUESTIONS[ik];
+    app.innerHTML = `${top(2)}
+      <div class="card">
+        <div class="ask">書きの問題</div>
+        <div class="q${solo(item.q)}">${sentence(item.q)}</div>
+        ${item.m ? `<div class="mean"><b>意味</b><span>${esc(item.m)}</span></div>` : ''}
+        ${coach('1', '線のカタカナを、<b>頭の中で漢字に</b>書いてみる（指や紙に書いてもOK）')}
+        ${coach('2', '書けたら（わからなくても）下のボタン')}
+        <button class="btn" id="open">答えを見る</button>
+      </div>`;
+    bindSkip();
+    document.getElementById('open').onclick = () => {
+      app.querySelector('.card').innerHTML = `
+        <div class="q${solo(item.q)}">${sentence(item.q)}</div>
+        ${chars(item)}
+        ${coach('3', `頭の中の字と1字ずつ見くらべる。<b>同じなら「正解」</b>、ちがう・迷ったら<b>「不正解」</b>を自分で押す`)}
+        <div class="row">
+          <button class="btn ok" id="y">正解</button>
+          <button class="btn ng" id="n"><span class="sym">×</span>不正解</button>
+        </div>`;
+      bindZoom();
+      document.getElementById('y').onclick = () => trial(2);
+      document.getElementById('n').onclick = () => trial(2);
+    };
     return;
   }
   done();
@@ -1726,7 +1726,7 @@ function manual(){
       <p>記録は先生も見ない。甘く採点して損するのは自分だけ。</p>`)}
     ${sec(4, '読みの答え方', `<p>線の部分の読みを、ひらがなで入力して「こたえる」。カタカナで打っても正解になる。分からなければ「わからない」。</p>`)}
     ${sec(5, '段（ステージ）と朱印「完」', `
-      <p>範囲を書きと読みに分けて、20語ずつ「段」にしてある（書き${STAGES.filter(x => x.t === 'k').length}段・読み${STAGES.filter(x => x.t === 'y').length}段。端数は最後の2段で分け合う）。「ぜんぶ」のときは書き2段→読み1段の順に並ぶ。「書きだけ」「読みだけ」にすると、その段だけが並ぶ。</p>
+      <p>範囲を書きと読みに分けて、20語ずつ「段」にしてある（書き${STAGES.filter(x => x.t === 'k').length}段・読み${STAGES.filter(x => x.t === 'y').length}段。端数は最後の2段で分け合う）。「ぜんぶ」のときは<b>読みの段を先に</b>、そのあと書きの段に進む。「書きだけ」「読みだけ」にすると、その段だけが並ぶ。</p>
       <p>段の語にぜんぶ1回ずつ正解すると<b>達成</b>。1回も間違えずに達成すると朱印<b>「完」</b>。</p>
       <p><b>札を押すと、その段の区切り（5語ずつ）が開く。</b>「区切り一」などを選ぶと、その5語だけを練習できる（終わったら次の区切りへ）。<b>「20語まとめて」</b>なら区切らずに段をぜんぶ一気に。「済」の区切りは、その5語だけをもう一度できる。段を0からやり直すのもここから（達成の記録は残る）。</p>
       <p><b>区切り</b>：段の中は小さな区切りで進む。最初は<b>5語</b>。区切りをノーミスで抜けると次は<b>10語</b>、さらに抜けると段の<b>20語を一気に</b>。2問まちがえたら5語に戻る。区切りごとに「続ける／今日はここまで」を選べる。札から区切りを選んだときは、大きさは変わらず1区切りずつ進む。</p>`)}
@@ -1757,7 +1757,7 @@ function manual(){
       <ul><li>記録はこのスマホの、このブラウザの中だけに残る。名前もログインもない。先生も見ない</li>
       <li>いつも同じ開き方で開く。<b>ホーム画面に追加</b>して、アイコンから開くのがおすすめ（LINEの中で開くと記録が別になることがある）</li>
       <li>目標点と「何日やるか」は、赤いボタンの下の「変える」→「目標を変える」でいつでも変えられる</li></ul>`)}
-    <button class="btn sub" id="trial2">お試し2問をもう一度<small>書き1問・読み1問を説明つきで（記録には残らない）</small></button>
+    <button class="btn sub" id="trial2">お試し2問をもう一度<small>読み1問・書き1問を説明つきで（記録には残らない）</small></button>
     <button class="btn" id="home">トップへ</button>`;
   document.getElementById('trial2').onclick = () => trial(0);
   document.getElementById('home').onclick = home;
