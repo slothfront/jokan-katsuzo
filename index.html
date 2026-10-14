@@ -164,6 +164,10 @@ input.ans::placeholder{color:var(--sub);font-size:18px}
 .confetti i{position:absolute;top:-20px;width:9px;height:14px;animation:fall linear forwards}
 @keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
 .hidden{display:none}
+.tile{cursor:pointer;font:inherit;color:inherit}
+.tile.later{border-style:dashed;border-color:var(--sub);opacity:.7}
+.sheet{position:fixed;inset:0;z-index:30;background:color-mix(in srgb,var(--ink) 35%,transparent);display:flex;align-items:flex-end;justify-content:center}
+.sheet-in{width:100%;max-width:520px;margin:0;border-radius:0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
 /* めくり札 */
 .fcard{min-height:300px;cursor:pointer;user-select:none;-webkit-user-select:none}
 .fc-kind{display:inline-block;font-size:12px;border:1px solid var(--sub);color:var(--sub);padding:0 6px;letter-spacing:.15em}
@@ -535,7 +539,11 @@ const skippedToday = i => S.skip[i] === today();          // 今日はもう出�
 const revenge = i => !!S.skip[i] && S.skip[i] < today();  // 前の日にスキップした字＝リベンジ（最初に出す）
 const revengeFirst = ix => [...ix.filter(revenge), ...ix.filter(i => !revenge(i))];
 /* ステージに今日出せる語が残っているか */
-const stageOpen = x => x.ix.some(i => !sg(x.id).done.includes(i) && !skippedToday(i));
+if(!S.later) S.later = {};                                // あとまわしの語 {問題番号: 決めた日}
+const isLater = i => !!S.later[i];
+/* 練習で出さない語：今日スキップした語・あとまわしの語（模試とめくり札には出す） */
+const out = i => skippedToday(i) || isLater(i);
+const stageOpen = x => x.ix.some(i => !sg(x.id).done.includes(i) && !out(i));
 function nextStage(){ return myStages().find(x => !sg(x.id).cleared && stageOpen(x)) || null; }
 const st = i => S.items[i] || (S.items[i] = {seen:0, ok:0, streak:0});
 
@@ -557,7 +565,7 @@ function mastered(t){ return (t ? ofType(t) : QUESTIONS.map((_, i) => i)).filter
 function masteredPct(t){ const n = ofType(t).length; return n ? Math.floor(mastered(t) / n * 100) : 0; }
 /* 間違えた語：間違えると入り、その日の最初の答えで正解すると外れる（あとで正解しただけでは外れない） */
 function isWrong(i){ const s = S.items[i]; if(!s || !s.seen) return false; return s.wrong !== undefined ? s.wrong : s.streak === 0; }
-function wrongIdx(){ return myIdx().filter(i => isWrong(i) && !skippedToday(i)); }
+function wrongIdx(){ return myIdx().filter(i => isWrong(i) && !out(i)); }
 function almost(){ return QUESTIONS.filter((_, i) => level(i) === 1).length; }
 /* やった日（本番の日までに練習した日の数）。途切れても0に戻らない */
 function doneDays(){ return [...new Set(S.days)].filter(d => d <= TEST.date).sort(); }
@@ -637,29 +645,29 @@ const byOld = (a, b) => String((S.items[a] || {}).lastDay || '').localeCompare(S
 /* きのうの確認：前の日までに出た語で、まだ「覚えた」でないもの。リベンジ→前に間違えた語→あと少し（古い順） */
 function checkPool(){
   const t = today();
-  const pool = myIdx().filter(i => { const s = S.items[i]; return s && s.seen && s.lastDay && s.lastDay < t && level(i) < 2 && !skippedToday(i); });
+  const pool = myIdx().filter(i => { const s = S.items[i]; return s && s.seen && s.lastDay && s.lastDay < t && level(i) < 2 && !out(i); });
   const g0 = pool.filter(i => level(i) === 0).sort(byOld), g1 = pool.filter(i => level(i) === 1).sort(byOld);
   return revengeFirst([...g0, ...g1]);
 }
 function checkLimit(){ return Math.max(2, Math.min(CHECK_MAX, Math.round(S.min * 60 / 3 / 15))); }
 /* 総ざらい：これまでに正解したことのある語ぜんぶ（覚えた語も）。苦手→古い順 */
 function sweepPool(){
-  const pool = myIdx().filter(i => S.items[i] && S.items[i].ok > 0 && !skippedToday(i));
+  const pool = myIdx().filter(i => S.items[i] && S.items[i].ok > 0 && !out(i));
   return revengeFirst([...pool.filter(i => level(i) < 2).sort(byOld), ...pool.filter(i => level(i) === 2).sort(byOld)]);
 }
 /* 復習の稽古：苦手 → まだ出ていない → あと少し → 覚えた（それぞれの中はシャッフル） */
 function trainQueue(){
   const g = {0:[], '-1':[], 1:[], 2:[]};
-  myIdx().forEach(i => { if(!skippedToday(i)) g[level(i)].push(i); });
+  myIdx().forEach(i => { if(!out(i)) g[level(i)].push(i); });
   return revengeFirst([...shuffle(g[0]), ...shuffle(g[-1]), ...shuffle(g[1]), ...shuffle(g[2])]);
 }
 /* ステージ：まだ正解していない語をシャッフル */
 function stageQueue(id){
   const g = sg(id);
-  return revengeFirst(shuffle(stageById(id).ix.filter(i => !g.done.includes(i) && !skippedToday(i))));
+  return revengeFirst(shuffle(stageById(id).ix.filter(i => !g.done.includes(i) && !out(i))));
 }
 function wrongQueue(){ return revengeFirst(wrongIdx().sort(byOld)); }
-function randomQueue(){ return revengeFirst(shuffle(myIdx().filter(i => !skippedToday(i)))); }
+function randomQueue(){ return revengeFirst(shuffle(myIdx().filter(i => !out(i)))); }
 function randName(){ return ({all:'ぜんぶ', k:'書き', y:'読み'})[S.only]; }
 /* 本番模試：本番と同じく書き15問・読み5問（範囲が足りなければある分だけ） */
 function mockQueue(){
@@ -719,6 +727,8 @@ function home(){
   stopTimer(); clearFx(); R = null;
   if(S.goal == null) return goalScreen(true);
   if(S.dayGoal == null){ S.dayGoal = defaultDayGoal(); save(); }
+  const lat = Object.keys(S.later).map(Number);
+  if(lat.length && S.laterAsked !== today() && QUESTIONS.every((_, i) => isLater(i) || (S.items[i] && S.items[i].everM))) return laterBack(lat);
   const last = doneDays().filter(d => d < today()).pop();
   if(last && last <= addDays(today(), -2) && S.welcomed !== today() && daysLeft() >= 0) return welcome();
   const best = S.mockBest, left = daysLeft(), plan = goPlan(), nx = nextStage();
@@ -774,10 +784,11 @@ function home(){
     <div class="sec">段</div>
     <div class="fuda">${myStages().map(x => { const g = sg(x.id);
       return `<button data-st="${x.id}" class="${g.cleared ? 'clr' : ''}${nx && nx.id === x.id ? ' now' : ''}" aria-label="${esc(x.name)}">
-        <span class="v">${esc(x.name)}</span><small>${g.cleared ? '達成' : `${g.done.length}/${x.ix.length}`}</small>${g.perfect ? '<span class="seal">完</span>' : ''}</button>`; }).join('')}</div>
+        <span class="v">${esc(x.name)}</span><small>${g.cleared ? '達成' : `${g.done.length}/${x.ix.length}`}${x.ix.some(isLater) && !g.cleared ? `<br>後${x.ix.filter(isLater).length}` : ''}</small>${g.perfect ? '<span class="seal">完</span>' : ''}</button>`; }).join('')}</div>
     <div class="note">${nx ? '段＝約20語のまとまり。札を押すとその段から始められる<br>朱の「完」＝ノーミスで達成。達成した段を押すと0からやり直し' : 'ぜんぶの段を達成。いまは苦手な語から出る復習の稽古'}</div>
     ${tSkip ? `<div class="note">今日は${tSkip}語を明日にまわした</div>` : ''}
     ${tRev ? `<div class="note">リベンジ${tRev}語は、いちばん先に出る</div>` : ''}
+    ${Object.keys(S.later).length ? `<div class="note">あとまわし${Object.keys(S.later).length}語（練習には出ない・模試とめくり札には出る。図鑑で戻せる）</div>` : ''}
     <div class="row">
       <button class="btn sub" id="rand">乱取り<small>${randName()}${myIdx().length}語をランダムに</small></button>
       <button class="btn sub" id="wrong"${wrongIdx().length ? '' : ' disabled'}>間違えた語<small>${wrongIdx().length ? `${randName()}・${wrongIdx().length}語` : 'いまは0語'}</small></button>
@@ -813,6 +824,23 @@ function home(){
   document.getElementById('goal').onclick = () => goalScreen(false);
   document.getElementById('manual').onclick = manual;
   document.getElementById('cards').onclick = cardMenu;
+}
+/* あとまわし以外がぜんぶ「覚えた」になった：戻すか聞く */
+function laterBack(lat){
+  S.laterAsked = today(); save();
+  app.innerHTML = `<div class="head"><h1 class="logo">常漢勝つぞ</h1></div>
+    <h1 style="margin-top:18px">ほかはぜんぶ覚えた</h1>
+    <div class="card center">
+      <div class="stamp big-stamp">ぜんぶ<br>覚えた</div>
+      <div>あとまわしにした語が <b>${lat.length}語</b> ある。</div>
+      <div class="grid" style="margin-top:10px">${lat.map(i => `<div class="tile">${esc(word(QUESTIONS[i]))}<span class="rd">${esc(reading(QUESTIONS[i]))}</span></div>`).join('')}</div>
+      <div style="margin-top:10px">この語を、練習に戻す？</div>
+    </div>
+    <button class="btn" id="back1">戻す<small>きのうの確認・段・乱取りにまた出る</small></button>
+    <button class="btn sub" id="keep">まだいい<small>また今度聞く（図鑑からいつでも戻せる）</small></button>`;
+  confetti();
+  document.getElementById('back1').onclick = () => { S.later = {}; save(); home(); };
+  document.getElementById('keep').onclick = home;
 }
 /* 2日以上あいて開いたとき */
 function welcome(){
@@ -939,7 +967,7 @@ function show(){
   clearFx();
   if(R.mode === 'mock' && R.timeUp) return result();
   if(R.mode === 'train' && R.timeUp) return askExtend();
-  if(R.mode === 'train') while(R.pos < R.queue.length && skippedToday(R.queue[R.pos].i)) R.pos++;
+  if(R.mode === 'train') while(R.pos < R.queue.length && out(R.queue[R.pos].i)) R.pos++;
   if(R.mode === 'train' && R.pos >= R.queue.length){
     if(R.kind === 'check') return checkDone();
     if(R.kind === 'wrong') return wrongDone();
@@ -1040,8 +1068,15 @@ function askSkip(i, ok){
       <div style="margin-top:8px">この語、どうする？</div>
     </div>
     <button class="btn" id="go2">次は行ける！<small>3問あとにもう一度出る</small></button>
-    <button class="btn sub" id="skip">今日はスキップ<small>明日覚える（明日いちばん先に出る）</small></button>`;
+    <button class="btn sub" id="skip">今日はスキップ<small>明日覚える（明日いちばん先に出る）</small></button>
+    <button class="btn sub" id="later">あとまわし<small>ほかをぜんぶ覚えたら戻すか聞く（模試とめくり札には出る）</small></button>`;
   document.getElementById('go2').onclick = () => { st(i).wr = 0; save(); afterAnswer(R.queue[R.pos], ok); };
+  document.getElementById('later').onclick = () => {
+    S.later[i] = today(); save();
+    R.queue = R.queue.filter((e, k) => k <= R.pos || e.i !== i);   // この先の出番を消す
+    R.latered = (R.latered || 0) + 1;
+    afterAnswer(R.queue[R.pos], ok);
+  };
   document.getElementById('skip').onclick = () => {
     S.skip[i] = today(); save();
     R.queue = R.queue.filter((e, k) => k <= R.pos || e.i !== i);   // この先の出番を消す
@@ -1053,11 +1088,11 @@ function afterAnswer(cur, ok){
   R.pos++;
   if(R.mode === 'train' && R.kind === 'check'){
     if(ok) R.check.done.add(cur.i); else R.check.missed.add(cur.i);
-    if(R.check.ix.every(i => R.check.done.has(i) || skippedToday(i))) return checkDone();
+    if(R.check.ix.every(i => R.check.done.has(i) || out(i))) return checkDone();
   }
   if(R.mode === 'train' && R.kind === 'wrong'){
     if(ok) R.wset.done.add(cur.i);
-    if(R.wset.ix.every(i => R.wset.done.has(i) || skippedToday(i))) return wrongDone();
+    if(R.wset.ix.every(i => R.wset.done.has(i) || out(i))) return wrongDone();
   }
   if(R.mode === 'train' && R.kind === 'stage'){
     const g = sg(R.stage), x = stageById(R.stage);
@@ -1121,12 +1156,14 @@ function checkDone(){
 /* ステージの残りが「明日覚える字」だけになった：次のステージへ進める */
 function stageRest(){
   stopTimer(); R.pausedAt = Date.now();
-  const x = stageById(R.stage), g = sg(R.stage), rest = x.ix.filter(i => !g.done.includes(i)).length;
+  const x = stageById(R.stage), g = sg(R.stage), restIx = x.ix.filter(i => !g.done.includes(i)), rest = restIx.length;
+  const nLater = restIx.filter(isLater).length, nSkip = rest - nLater;
   const left = Math.max(0, R.end - Date.now()), nx = nextStage();
-  app.innerHTML = `<h1>${esc(x.label)}は今日ここまで</h1>
+  app.innerHTML = `<h1>${esc(x.label)}は${nSkip ? '今日ここまで' : 'ここまで'}</h1>
     <div class="card center">
       <div class="big">${x.ix.length - rest}<small> / ${x.ix.length}語 正解</small></div>
-      <div class="muted">残り${rest}語は明日覚える字。明日いちばん先に出るよ</div>
+      ${nSkip ? `<div class="muted">${nSkip}語は明日覚える語。明日いちばん先に出るよ</div>` : ''}
+      ${nLater ? `<div class="muted">${nLater}語はあとまわし。あとまわしが残っている段は達成にならない</div>` : ''}
     </div>
     <button class="btn" id="nx">${nx ? `次へ：${esc(nx.label)}` : '次へ：復習の稽古'}${left > 0 ? `<small>残り ${clock()}</small>` : ''}</button>
     <button class="btn sub" id="fin">終わる</button>`;
@@ -1264,7 +1301,8 @@ function result(quit){
       <div class="big">${R.right}<small> / ${R.total}問 正解</small></div>
       <div>最高 <b>${R.maxCombo}</b> 連続正解</div>
       ${R.total ? '<div class="goal" style="font-size:18px;margin-top:4px">今日の1日 ✓</div>' : ''}
-      ${R.skipped ? `<div class="muted">明日覚える字 ${R.skipped}語</div>` : ''}
+      ${R.skipped ? `<div class="muted">明日覚える語 ${R.skipped}語</div>` : ''}
+      ${R.latered ? `<div class="muted">あとまわし ${R.latered}語</div>` : ''}
       ${R.clears.length ? `<div class="goal" style="font-size:19px;margin-top:6px">達成：${R.clears.map(esc).join('・')}</div>` : ''}
       ${R.kind === 'stage' && !sg(R.stage).cleared ? `<div style="margin-top:6px">${stageBar()}</div><div class="muted">続きは次の稽古で</div>` : ''}
       <div style="margin-top:8px">覚えた　書き <b>${mastered('k')}</b>語${gk > 0 ? ` <span class="plus">+${gk}</span>` : ''}・読み <b>${mastered('y')}</b>語${gy > 0 ? ` <span class="plus">+${gy}</span>` : ''}</div>
@@ -1306,8 +1344,8 @@ function cardView(ix, title, canMix){
   const face = () => {
     const it = QUESTIONS[ix[k]];
     const front = it.t === 'k'
-      ? `<div class="fc-kind">書き</div><div class="q solo">${sentence(it.q)}</div>${it.m ? `<div class="mean"><b>意味</b><span>${esc(it.m)}</span></div>` : ''}`
-      : `<div class="fc-kind">読み</div><div class="q solo">${sentence(it.q)}</div>`;
+      ? `<div class="fc-kind">書き</div>${isLater(ix[k]) ? '<span class="fc-kind" style="margin-left:6px">あとまわし</span>' : ''}<div class="q solo">${sentence(it.q)}</div>${it.m ? `<div class="mean"><b>意味</b><span>${esc(it.m)}</span></div>` : ''}`
+      : `<div class="fc-kind">読み</div>${isLater(ix[k]) ? '<span class="fc-kind" style="margin-left:6px">あとまわし</span>' : ''}<div class="q solo">${sentence(it.q)}</div>`;
     const ans = it.t === 'k'
       ? `${chars(it)}<div class="full">${esc(reading(it))}</div>${extra({...it, m:''})}`
       : `<div class="answer" style="font-size:40px">${it.a.map(esc).join('<span class="muted"> ／ </span>')}</div>${extra(it)}`;
@@ -1367,6 +1405,9 @@ function manual(){
     ${sec(6, '間違えたとき', `
       <ul><li><b>復活戦</b>：間違えた語は3問あとにもう一度出る</li>
       <li><b>5回つづけて×</b>：「次は行ける！」か「今日はスキップ（明日覚える）」を選べる。スキップした語は次の日に<b>リベンジ</b>としていちばん先に出る</li></ul>`)}
+    ${sec(13, 'あとまわし（捨てる語）', `<p>どうしても覚えられない語は「あとまわし」にできる。5回つづけて×のときの画面か、図鑑で語を押して決める（図鑑から戻すこともできる）。</p>
+      <ul><li>きのうの確認・段・乱取り・間違えた語・復習・総ざらいには出ない</li><li><b>本番模試とめくり札には出る</b>（本番に出るかもしれないのは変わらない）</li>
+      <li>あとまわしが残っている段は<b>達成にならない</b></li><li>ほかの語がぜんぶ「覚えた」になったら、戻すか聞く</li></ul>`)}
     ${sec(7, '乱取り・間違えた語', `
       <p><b>乱取り</b>：選んでいる種類（ぜんぶ／書きだけ／読みだけ）の語をランダムに出す。</p>
       <p><b>間違えた語</b>：間違えた語だけを出す。<b>その日の最初の答えで正解すると外れる</b>（間違えてから正解しただけでは外れない。次の日の最初に正解すれば外れる）。</p>`)}
@@ -1395,15 +1436,32 @@ function zukan(){
   clearFx();
   const tiles = QUESTIONS.map((q, i) => {
     const l = isWrong(i) ? 0 : level(i);
-    return `<div class="tile s${l}">${esc(word(q))}<span class="rd">${esc(reading(q))}</span><small>${q.t === 'y' ? '読み' : '書き'}${skippedToday(i) ? '・明日' : revenge(i) ? '・リベンジ' : ''}</small></div>`;
+    return `<button class="tile s${l}${isLater(i) ? ' later' : ''}" data-z="${i}">${esc(word(q))}<span class="rd">${esc(reading(q))}</span><small>${q.t === 'y' ? '読み' : '書き'}${isLater(i) ? '・後回し' : skippedToday(i) ? '・明日' : revenge(i) ? '・リベンジ' : ''}</small></button>`;
   }).join('');
   app.innerHTML = `<div class="top"><h1>図鑑</h1><button class="btn sub mini" id="home2">トップへ</button></div>
     <div class="legend"><span><i style="background:var(--ink);border-color:var(--ink)"></i>覚えた</span><span><i style="border:1.5px solid var(--kin)"></i>あと少し</span>
-      <span><i style="background:var(--shu-bg);border-color:var(--shu)"></i>苦手</span><span><i style="background:var(--card)"></i>まだ</span></div>
+      <span><i style="background:var(--shu-bg);border-color:var(--shu)"></i>苦手</span><span><i style="background:var(--card)"></i>まだ</span><span><i style="background:var(--card);border-style:dashed;border-color:var(--sub)"></i>あとまわし</span></div>
+    <div class="note" style="text-align:left">語を押すと、あとまわしにしたり戻したりできる。</div>
     <div class="grid">${tiles}</div>
     <button class="btn" id="home">トップへ</button>`;
   document.getElementById('home').onclick = home;
   document.getElementById('home2').onclick = home;
+  document.querySelectorAll('[data-z]').forEach(b => b.onclick = () => laterSheet(+b.dataset.z));
+}
+/* 図鑑：1語をあとまわしにする／戻す */
+function laterSheet(i){
+  const q = QUESTIONS[i], on = isLater(i);
+  const box = document.createElement('div'); box.className = 'sheet';
+  box.innerHTML = `<div class="sheet-in card">
+      <div class="big center">${esc(word(q))}</div><div class="full">${esc(reading(q))}</div>
+      <div class="muted center" style="margin:8px 0">${on ? 'いまは「あとまわし」。戻すと練習にまた出る。' : 'あとまわしにすると、練習（確認・段・乱取り・間違えた語）に出なくなる。模試とめくり札には出る。あとまわしが残る段は達成にならない。'}</div>
+      <button class="btn" id="lt">${on ? '練習に戻す' : 'あとまわしにする'}</button>
+      <button class="btn sub" id="lc">やめる</button></div>`;
+  document.body.appendChild(box);
+  const close = () => box.remove();
+  box.onclick = e => { if(e.target === box) close(); };
+  box.querySelector('#lc').onclick = close;
+  box.querySelector('#lt').onclick = () => { if(on) delete S.later[i]; else S.later[i] = today(); save(); close(); const y = window.scrollY; zukan(); window.scrollTo(0, y); };
 }
 function confetti(){
   clearFx();
