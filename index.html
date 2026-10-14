@@ -164,6 +164,11 @@ input.ans::placeholder{color:var(--sub);font-size:18px}
 .confetti i{position:absolute;top:-20px;width:9px;height:14px;animation:fall linear forwards}
 @keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
 .hidden{display:none}
+/* めくり札 */
+.fcard{min-height:300px;cursor:pointer;user-select:none;-webkit-user-select:none}
+.fc-kind{display:inline-block;font-size:12px;border:1px solid var(--sub);color:var(--sub);padding:0 6px;letter-spacing:.15em}
+.fc-hint{text-align:center;color:var(--sub);font-size:13px;margin-top:18px}
+.fc-line{border-top:1px dashed var(--hair);margin:12px 0}
 /* 手引き */
 .tebiki{display:flex;align-items:center;gap:12px;width:100%;margin:14px 0 4px;padding:10px 14px 10px 10px;background:var(--card);color:var(--ink);border:1.5px solid var(--ink);border-left:8px solid var(--ink);cursor:pointer;font:inherit;text-align:left;min-height:56px}
 .tebiki:active{transform:translateY(1px)}
@@ -775,6 +780,7 @@ function home(){
       <div><b>${mastered('y')}</b><span>覚えた・読み</span></div>
       <div><b>${S.mockBest === null ? '—' : S.mockBest + '点'}</b><span>模試最高</span></div>
     </div>
+    <button class="btn sub" id="cards">めくり札<small>採点しないで、めくって見るだけ（段ごと・ぜんぶランダム）</small></button>
     <button class="tebiki" id="manual"><span class="tb-mark">手引</span><span class="tb-txt"><b>手引き</b><small>使い方・「覚えた」などの意味</small></span><span class="tb-arrow">›</span></button>
     <p class="note">記録はこのスマホの中だけに残ります。</p>`;
   document.querySelectorAll('#only button').forEach(b => b.onclick = () => { S.only = b.dataset.v; save(); home(); });
@@ -794,6 +800,7 @@ function home(){
   document.getElementById('zukan').onclick = zukan;
   document.getElementById('goal').onclick = () => goalScreen(false);
   document.getElementById('manual').onclick = manual;
+  document.getElementById('cards').onclick = cardMenu;
 }
 /* 2日以上あいて開いたとき */
 function welcome(){
@@ -1262,6 +1269,66 @@ function result(quit){
   document.getElementById('again').onclick = () => wasMock ? mockChoose() : startTrain(goPlan());
   R = null;
 }
+/* めくり札：採点しない。表＝問題、押すと裏＝答え。記録には残さない */
+function cardMenu(){
+  clearFx(); stopTimer(); window.scrollTo(0, 0);
+  app.innerHTML = `<div class="top"><h1>めくり札</h1><button class="btn sub mini" id="home2">トップへ</button></div>
+    <div class="note" style="text-align:left">採点しないで、めくって見るだけ。電車の中や、友だちと出し合うときに。記録には残らない。</div>
+    <div class="seg" id="only" style="margin-top:12px">
+      <button data-v="all" class="${S.only === 'all' ? 'on' : ''}">ぜんぶ</button>
+      <button data-v="k" class="${S.only === 'k' ? 'on' : ''}">書きだけ</button>
+      <button data-v="y" class="${S.only === 'y' ? 'on' : ''}">読みだけ</button>
+    </div>
+    <button class="btn" id="allr">ぜんぶランダム<small>${randName()}・${myIdx().length}枚</small></button>
+    <div class="sec">段ごと</div>
+    <div class="fuda">${myStages().map(x => `<button data-cs="${x.id}" aria-label="${esc(x.label)}"><span class="v">${esc(x.name)}</span><small>${x.ix.length}枚</small></button>`).join('')}</div>
+    <button class="btn sub" id="home">トップへ</button>`;
+  document.querySelectorAll('#only button').forEach(b => b.onclick = () => { S.only = b.dataset.v; save(); cardMenu(); });
+  document.getElementById('allr').onclick = () => cardView(shuffle(myIdx()), `${randName()}・ランダム`);
+  document.querySelectorAll('[data-cs]').forEach(b => b.onclick = () => { const x = stageById(b.dataset.cs); cardView(x.ix.slice(), x.label, true); });
+  document.getElementById('home').onclick = home;
+  document.getElementById('home2').onclick = home;
+}
+function cardView(ix, title, canMix){
+  let k = 0, back = false, open = false;
+  const face = () => {
+    const it = QUESTIONS[ix[k]];
+    const front = it.t === 'k'
+      ? `<div class="fc-kind">書き</div><div class="q solo">${sentence(it.q)}</div>${it.m ? `<div class="mean"><b>意味</b><span>${esc(it.m)}</span></div>` : ''}`
+      : `<div class="fc-kind">読み</div><div class="q solo">${sentence(it.q)}</div>`;
+    const ans = it.t === 'k'
+      ? `${chars(it)}<div class="full">${esc(reading(it))}</div>${extra({...it, m:''})}`
+      : `<div class="answer" style="font-size:40px">${it.a.map(esc).join('<span class="muted"> ／ </span>')}</div>${extra(it)}`;
+    return (back || open) ? `${front}<div class="fc-line"></div>${ans}` : `${front}<div class="fc-hint">押すと答え</div>`;
+  };
+  const draw = () => {
+    app.innerHTML = `<div class="top"><span class="timer">${k + 1}<small style="font-size:14px"> / ${ix.length}</small></span>
+        <span class="kind">${esc(title)}</span><button class="btn sub mini" id="back">もどる</button></div>
+      <div class="sbar"><div><i style="width:${(k + 1) / ix.length * 100}%"></i></div></div>
+      <div class="card fcard" id="fc" role="button" tabindex="0">${face()}</div>
+      <div class="row">
+        <button class="btn sub" id="prev"${k ? '' : ' disabled'}>‹ 前へ</button>
+        <button class="btn" id="next">${k < ix.length - 1 ? '次へ ›' : 'さいごまで見た'}</button>
+      </div>
+      <div class="row">
+        <button class="btn sub" id="open">${open ? '答えを隠す' : 'いつも答えも出す'}</button>
+        ${canMix ? '<button class="btn sub" id="mix">まぜる</button>' : ''}
+      </div>`;
+    bindZoom();
+    const fc = document.getElementById('fc');
+    fc.onclick = e => { if(e.target.closest('.ch')) return; back = !back; draw(); };
+    document.getElementById('prev').onclick = () => { if(k){ k--; back = false; draw(); } };
+    document.getElementById('next').onclick = () => { if(k < ix.length - 1){ k++; back = false; draw(); } else cardMenu(); };
+    document.getElementById('open').onclick = () => { open = !open; draw(); };
+    if(canMix) document.getElementById('mix').onclick = () => { shuffle(ix); k = 0; back = false; draw(); };
+    document.getElementById('back').onclick = cardMenu;
+    let sx = null;   // 左右にスワイプでめくる
+    fc.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, {passive:true});
+    fc.addEventListener('touchend', e => { if(sx === null) return; const dx = e.changedTouches[0].clientX - sx; sx = null;
+      if(Math.abs(dx) > 50){ e.preventDefault(); if(dx < 0 && k < ix.length - 1){ k++; back = false; draw(); } else if(dx > 0 && k){ k--; back = false; draw(); } } });
+  };
+  window.scrollTo(0, 0); draw();
+}
 /* 手引き（使い方の説明） */
 function manual(){
   clearFx(); window.scrollTo(0, 0);
@@ -1291,6 +1358,7 @@ function manual(){
     ${sec(7, '乱取り・間違えた語', `
       <p><b>乱取り</b>：選んでいる種類（ぜんぶ／書きだけ／読みだけ）の語をランダムに出す。</p>
       <p><b>間違えた語</b>：間違えた語だけを出す。<b>その日の最初の答えで正解すると外れる</b>（間違えてから正解しただけでは外れない。次の日の最初に正解すれば外れる）。</p>`)}
+    ${sec(12, 'めくり札', `<p>採点しないで、めくって見るだけのカード。段ごとか、ぜんぶランダムで。カードを押すと答え、左右にスワイプか「次へ」でめくる。「いつも答えも出す」で両面を一度に見られる。電車の中や、友だちと出し合うときに。<b>記録には残らない</b>（「覚えた」にはならない）。</p>`)}
     ${sec(8, '本番模試', `
       <p>本番と同じ20問（書き${TEST.mockKaki}・読み${TEST.mockYomi}）を10分で。書きに意味は出ない。</p>
       <ul><li><b>紙で解く</b>：一覧を見てノートに書く → 答え合わせで1問ずつ正解／不正解</li>
