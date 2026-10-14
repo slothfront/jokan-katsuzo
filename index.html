@@ -491,6 +491,7 @@ function home(){
       return `<button data-st="${x.id}" class="${g.cleared ? 'clr' : ''}${nx && nx.id === x.id ? ' now' : ''}">${esc(x.name)}<small>${
         g.perfect ? '👑 ノーミス' : g.cleared ? '✓ クリア' : `${g.done.length}/${x.ix.length}`}</small></button>`; }).join('')}</div>
     <div class="muted" style="text-align:center">${nx ? 'ステージは押して選び直せる（クリアしたステージはやり直し）' : '🎉 ぜんぶのステージをクリア！ いまは苦手な字から出る復習モード'}</div>
+    <button class="btn sub" id="rand">🎲 ${randName()}（${myIdx().length}語）</button>
     <div class="row">
       <button class="btn sub" id="mock">本番模試</button>
       <button class="btn sub" id="zukan">ずかん</button>
@@ -506,6 +507,7 @@ function home(){
   document.getElementById('minus').onclick = () => setMin(-1);
   document.getElementById('plus').onclick = () => setMin(1);
   document.getElementById('go').onclick = () => startRun('train', nx ? nx.id : null);
+  document.getElementById('rand').onclick = () => startRun('train', null, true);
   document.querySelectorAll('[data-st]').forEach(b => b.onclick = () => {
     const g = sg(b.dataset.st);
     if(g.cleared){ g.done = []; g.miss = 0; save(); }   // クリア済みはやり直し（クリアの記録は残す）
@@ -532,20 +534,30 @@ function stageQueue(id){
   const g = sg(id);
   return shuffle(stageById(id).ix.filter(i => !g.done.includes(i)));
 }
-function setStage(id){   // id=null で復習モード
-  R.stage = id;
-  R.queue = (id ? stageQueue(id) : trainQueue()).map(i => ({i, revive:false}));
+/* ランダム：選んでいる種類（ぜんぶ／書きだけ／読みだけ）の全語をシャッフル */
+function myIdx(){ return QUESTIONS.map((q, i) => (S.only === 'all' || q.t === S.only) ? i : -1).filter(i => i >= 0); }
+function randomQueue(){ return shuffle(myIdx()); }
+function randName(){ return ({all:'ぜんぶ', k:'書き', y:'読み'})[S.only] + 'ランダム'; }
+/* 一周したときの補充：ランダムは並べ直し、復習モードは覚えていない字から */
+function refill(){
+  if(R.random) return randomQueue();
+  const more = trainQueue().filter(i => level(i) < 2);
+  return more.length ? more : trainQueue();
+}
+function setStage(id, random){   // id=null で復習モード／random=true でランダム
+  R.stage = id; R.random = !id && !!random;
+  R.queue = (id ? stageQueue(id) : R.random ? randomQueue() : trainQueue()).map(i => ({i, revive:false}));
   R.pos = 0;
 }
 
 let R = null;   // 実行中の回
-function startRun(mode, stageId){
+function startRun(mode, stageId, random){
   const before = predicted();
   R = {mode, stage:null, clears:[], queue: mode === 'train' ? [] : mockQueue().map(i => ({i, revive:false})),
        pos:0, counted:new Set(), right:0, total:0, combo:0, maxCombo:0, before, masteredBefore: mastered(),
        end: Date.now() + S.min * 60000, minutes: S.min, timeUp:false};
   if(mode === 'train'){
-    setStage(stageId || null);
+    setStage(stageId || null, random);
     timerId = setInterval(tick, 250);
   }
   show();
@@ -568,7 +580,7 @@ function header(cur){
   const kind = cur.revive ? '<span class="kind revive">復活戦</span>'
              : `<span class="kind">${QUESTIONS[cur.i].t === 'y' ? '読み' : '書き'}</span>`;
   return `<div class="top">${left}${kind}<button class="btn sub" style="width:auto;margin:0;padding:6px 12px;font-size:14px" id="quit">やめる</button></div>
-          ${R.stage ? stageBar() : ''}
+          ${R.stage ? stageBar() : R.random ? `<div class="sbar"><span>🎲 ${randName()}（${myIdx().length}語）</span></div>` : ''}
           <div class="combo" id="combo">${R.combo >= 2 ? R.combo + 'コンボ！' : ''}</div>`;
 }
 function stageBar(){
@@ -664,8 +676,7 @@ function next(ok, alreadyBumped){
   }
   // 復習モードで全部出し切ったら、覚えていない問題からもう一周
   if(R.mode === 'train' && !R.stage && R.pos >= R.queue.length && !R.timeUp){
-    const more = trainQueue().filter(i => level(i) < 2);
-    R.queue.push(...(more.length ? more : trainQueue()).map(i => ({i, revive:false})));
+    R.queue.push(...refill().map(i => ({i, revive:false})));
   }
   show();
 }
@@ -711,8 +722,7 @@ function askExtend(){
     const m = +b.dataset.m;
     R.end = Date.now() + m * 60000; R.minutes += m; R.timeUp = false;
     if(R.pos >= R.queue.length && !R.stage){
-      const more = trainQueue().filter(i => level(i) < 2);
-      R.queue.push(...(more.length ? more : trainQueue()).map(i => ({i, revive:false})));
+      R.queue.push(...refill().map(i => ({i, revive:false})));
     }
     timerId = setInterval(tick, 250);
     show();
