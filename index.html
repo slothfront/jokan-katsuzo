@@ -114,7 +114,8 @@ const TEST = {
   title: '第5回 常用漢字テスト',
   date: '2026-10-26',          // 本番の日
   full: 50,                    // 満点（未確認・仮）
-  pass: 30,                    // 合格点（本人「確か30点」）
+  pass: 30,                    // 合格点（本人「確か30点」）＝目標の最低点
+  goalStep: 5,                 // 目標は5点きざみ（合格点〜満点）
   mockKaki: 15,                // 本番の書き取りの問題数（実施要項：第1〜6回は書き15問）
   mockYomi: 5,                 // 本番の読み取りの問題数（同：読み5問）
   range: 'P.76〜87・P.117〜118',
@@ -383,6 +384,9 @@ if(!S.stages) S.stages = {};                              // ステージの進�
 const sg = id => S.stages[id] || (S.stages[id] = {done:[], miss:0, cleared:false, perfect:false});
 const stageById = id => STAGES.find(x => x.id === id);
 const myStages = () => STAGES.filter(x => S.only === 'all' || x.t === S.only);
+/* 目標：生徒が自分で決める（合格点〜満点・5点きざみ）。未設定なら最初に聞く */
+const clampGoal = g => Math.min(TEST.full, Math.max(TEST.pass, Math.round(g / TEST.goalStep) * TEST.goalStep));
+const goal = () => clampGoal(S.goal || TEST.pass);
 if(!S.skip) S.skip = {};                                  // 明日覚える字 {問題番号: スキップした日}
 const skippedToday = i => S.skip[i] === today();          // 今日はもう出さない
 const revenge = i => !!S.skip[i] && S.skip[i] < today();  // 前の日にスキップした字＝リベンジ（最初に出す）
@@ -471,9 +475,10 @@ function stopTimer(){ if(timerId){ clearInterval(timerId); timerId = null; } }
 function home(){
   stopTimer();
   const p = predicted(), left = daysLeft(), m = mastered(), nx = nextStage();
-  const passPct = Math.min(100, TEST.pass / TEST.full * 100);
-  const msg = p >= TEST.pass ? '合格ライン突破圏！ このまま固めよう'
-            : `合格ラインまで あと <b>${TEST.pass - p}点</b>`;
+  if(S.goal == null) return goalScreen(true);
+  const G = goal(), passPct = Math.min(100, G / TEST.full * 100);
+  const msg = p >= G ? '🎯 目標突破圏！ このまま固めよう'
+            : `目標まで あと <b>${G - p}点</b>`;
   app.innerHTML = `
     <h1>常漢勝つぞ</h1>
     <div class="muted">${esc(TEST.title)}（${esc(TEST.range || '')}）<br>${left > 0 ? `本番まで あと<b>${left}日</b>` : left === 0 ? '<b>今日が本番！</b>' : '本番は終わりました'}</div>
@@ -482,8 +487,9 @@ function home(){
       <div class="muted">いまの予想点（${TEST.full}点満点）</div>
       <div class="big">${p}<span style="font-size:20px">点</span></div>
       <div class="meter"><div class="fill" style="width:${p / TEST.full * 100}%"></div>
-        <div class="pass" style="left:${passPct}%"><span>合格 ${TEST.pass}点</span></div></div>
-      <div>${msg}</div>
+        <div class="pass" style="left:${passPct}%"><span${passPct > 70 ? ' style="left:auto;right:6px"' : ''}>🎯 目標 ${G}点</span></div></div>
+      <div class="row" style="align-items:center"><div style="flex:1">${msg}</div>
+        <button class="btn sub" id="goal" style="width:auto;flex:none;margin:0;padding:8px 12px;font-size:14px">目標を変える</button></div>
     </div>
     <div class="seg" id="only">
       <button data-v="all" class="${S.only === 'all' ? 'on' : ''}">ぜんぶ</button>
@@ -528,6 +534,29 @@ function home(){
   });
   document.getElementById('mock').onclick = () => startRun('mock');
   document.getElementById('zukan').onclick = zukan;
+  document.getElementById('goal').onclick = () => goalScreen(false);
+}
+/* 目標を決める画面（最初に開いたとき／トップの「目標を変える」） */
+function goalScreen(first){
+  stopTimer();
+  let g = clampGoal(S.goal || TEST.pass);
+  app.innerHTML = `<h1>🎯 目標を決めよう</h1>
+    <div class="card center">
+      <div>${esc(TEST.title)}で、何点をめざす？</div>
+      <div class="stepper" style="margin:18px 0 6px">
+        <button id="gm" aria-label="5点さげる">−</button>
+        <b id="gv" style="font-size:40px;min-width:120px">${g}点</b>
+        <button id="gp" aria-label="5点あげる">＋</button>
+      </div>
+      <div class="muted">${TEST.pass}点〜${TEST.full}点（${TEST.goalStep}点きざみ）・あとから変えられる</div>
+    </div>
+    <button class="btn" id="ok">これでいく！</button>
+    ${first ? '' : '<button class="btn sub" id="back">もどる</button>'}`;
+  const set = d => { g = clampGoal(g + d); document.getElementById('gv').textContent = g + '点'; };
+  document.getElementById('gm').onclick = () => set(-TEST.goalStep);
+  document.getElementById('gp').onclick = () => set(TEST.goalStep);
+  document.getElementById('ok').onclick = () => { S.goal = g; save(); home(); };
+  if(!first) document.getElementById('back').onclick = home;
 }
 
 /* 出す順：苦手 → まだ出ていない → あと少し → 覚えた（それぞれの中はシャッフル） */
@@ -801,11 +830,11 @@ function result(){
     const done = R.total === R.queue.length;
     const best = S.mockBest;
     if(done && (best === null || score > best)){ S.mockBest = score; save(); }
-    const passed = done && score >= TEST.pass;
+    const passed = done && score >= goal();
     body = `
       <div class="muted">本番模試（${R.queue.length}問・${TEST.full}点満点に換算）${done ? '' : '※途中でやめたので記録しません'}</div>
       <div class="big">${score}<span style="font-size:20px">点</span></div>
-      ${passed ? '<div class="goal pop">🎉 合格ライン突破！</div>' : `<div>合格まで あと <b>${Math.max(0, TEST.pass - score)}点</b></div>`}
+      ${passed ? `<div class="goal pop">🎯 目標${goal()}点 達成！</div>` : `<div>目標${goal()}点まで あと <b>${Math.max(0, goal() - score)}点</b></div>`}
       ${done && best !== null && score > best ? `<div class="goal" style="font-size:20px">自己ベスト更新！（${best}点 → ${score}点）</div>` : ''}`;
     if(passed) confetti();
   }else{
@@ -819,8 +848,8 @@ function result(){
       <div style="margin-top:8px">覚えた <b>${mastered()}</b>字（${gained >= 0 ? '+' : ''}${gained}）・あと少し <b>${almost()}</b>字</div>
       <div class="muted">あと少しの字は、次の回でも正解すると「覚えた」になる</div>
       <div>予想点 ${R.before}点 → <b>${after}点</b></div>
-      ${after >= TEST.pass && R.before < TEST.pass ? '<div class="goal pop">🎉 予想点が合格ラインを越えた！</div>' : ''}`;
-    if(after >= TEST.pass && R.before < TEST.pass) confetti();
+      ${after >= goal() && R.before < goal() ? '<div class="goal pop">🎯 予想点が目標を越えた！</div>' : ''}`;
+    if(after >= goal() && R.before < goal()) confetti();
   }
   app.innerHTML = `<h1>おつかれさま！</h1><div class="card center">${body}</div>
     <button class="btn" id="home">トップへ</button>`;
