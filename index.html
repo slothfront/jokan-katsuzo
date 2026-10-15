@@ -300,6 +300,7 @@ const TEST = {
   full: 100,                   // 満点（本人「多分100点満点」＝20問×5点）
   pass: 30,                    // 合格点（本人「確か30点」）＝目標の最低点
   goalStep: 5,                 // 目標は5点きざみ（合格点〜満点）
+  goalDefault: 80,             // 目標の初期値（本人指示 2026-10-15）
   mockKaki: 15,                // 本番の書き取りの問題数（実施要項：第1〜6回は書き15問）
   mockYomi: 5,                 // 本番の読み取りの問題数（同：読み5問）
   range: 'P.76〜87・P.117〜118',
@@ -617,7 +618,7 @@ const groupsPer = size => size >= 20 ? 99 : size >= 10 ? 2 : 1;   // 区切り�
 if(!S.rnd) S.rnd = {};                                    // 乱取りの周 {all／k／y: {left:まだ出ていない語, miss:この周で間違えた語, r:何周目, n:この周の語数}}（次の回に持ち越す）
 /* 目標：生徒が自分で決める（合格点〜満点・5点きざみ）。未設定なら最初に聞く */
 const clampGoal = g => Math.min(TEST.full, Math.max(TEST.pass, Math.round(g / TEST.goalStep) * TEST.goalStep));
-const goal = () => clampGoal(S.goal || TEST.pass);
+const goal = () => clampGoal(S.goal || TEST.goalDefault);
 /* やる日数の目標：本番までに何日やるか（1日1分でもよい） */
 const maxDays = () => Math.max(1, doneDays().filter(d => d < today()).length + daysLeft());
 const defaultDayGoal = () => Math.max(1, daysLeft() - 1);
@@ -1063,7 +1064,7 @@ function welcome(){
 /* 目標を決める画面（最初に開いたとき／トップの「目標を変える」）：目標点と、本番までに何日やるか */
 function goalScreen(first){
   stopTimer(); clearFx();
-  let g = clampGoal(S.goal || TEST.pass);
+  let g = clampGoal(S.goal || TEST.goalDefault);
   let dg = Math.min(maxDays(), S.dayGoal || defaultDayGoal()); const dg0 = dg;
   const showDays = daysLeft() > 0;
   app.innerHTML = `<div class="head"><h1 class="logo">コツコツ勝つ常漢</h1></div>
