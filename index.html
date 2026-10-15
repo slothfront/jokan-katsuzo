@@ -152,6 +152,7 @@ input.ans::placeholder{color:var(--sub);font-size:18px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px}
 .tile .rd{display:block;font-family:"Zen Kaku Gothic New",sans-serif;font-weight:500;font-size:12px;line-height:1.3;margin-top:2px;word-break:break-all}
 .tile{padding:8px 2px;text-align:center;font-family:"Noto Serif JP",serif;font-weight:900;font-size:15px;border:1px solid var(--hair);background:var(--card)}
+.tile .cnt{display:block;font-family:"Zen Kaku Gothic New",sans-serif;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
 .tile small{display:block;font-family:"Zen Kaku Gothic New",sans-serif;font-size:12px;font-weight:500;color:var(--sub)}
 .tile.s2{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
 .tile.s2 small{color:var(--on-ink);opacity:.75}
@@ -1768,7 +1769,7 @@ function manual(){
       <li><b>最高点</b>：本番模試のいちばんよかった点。赤い線が自分の目標</li>
       <li><b>やった日</b>：本番までに練習した日の数。休んでも0に戻らない。■は「きのうの確認」までやった日</li></ul>
       <p>トップの記録は<b>見るだけ</b>（押しても何も起きない）。押せるところには影と「›」がある。</p>
-      <p><b>図鑑</b>の色：墨＝覚えた／金の枠＝あと少し／朱＝苦手（間違えた語）／白＝まだ。</p>`)}
+      <p><b>図鑑</b>の分数＝正解した回数／解いた回数。色：墨＝覚えた／金の枠＝あと少し／朱＝苦手（間違えた語）／白＝まだ。</p>`)}
     ${sec(13, '記録について', `
       <ul><li>記録はこのスマホの、このブラウザの中だけに残る。名前もログインもない。先生も見ない</li>
       <li>いつも同じ開き方で開く。<b>ホーム画面に追加</b>して、アイコンから開くのがおすすめ（LINEの中で開くと記録が別になることがある）</li>
@@ -1783,12 +1784,13 @@ function zukan(){
   clearFx();
   const tiles = QUESTIONS.map((q, i) => {
     const l = isWrong(i) ? 0 : level(i);
-    return `<button class="tile s${l}${isLater(i) ? ' later' : ''}" data-z="${i}">${esc(word(q))}<span class="rd">${esc(reading(q))}</span><small>${q.t === 'y' ? '読み' : '書き'}${isLater(i) ? '・後回し' : skippedToday(i) ? '・明日' : revenge(i) ? '・リベンジ' : ''}</small></button>`;
+    const it = S.items[i] || {}, cnt = `<span class="cnt">${it.ok || 0}/${it.seen || 0}</span>`;   // 正解した回数／解いた回数（本人指示 2026-10-15）
+    return `<button class="tile s${l}${isLater(i) ? ' later' : ''}" data-z="${i}">${esc(word(q))}<span class="rd">${esc(reading(q))}</span>${cnt}<small>${q.t === 'y' ? '読み' : '書き'}${isLater(i) ? '・後回し' : skippedToday(i) ? '・明日' : revenge(i) ? '・リベンジ' : ''}</small></button>`;
   }).join('');
   app.innerHTML = `<div class="top"><h1>図鑑</h1><button class="btn sub mini" id="home2">トップへ</button></div>
     <div class="legend"><span><i style="background:var(--ink);border-color:var(--ink)"></i>覚えた</span><span><i style="border:1.5px solid var(--kin)"></i>あと少し</span>
       <span><i style="background:var(--shu-bg);border-color:var(--shu)"></i>苦手</span><span><i style="background:var(--card)"></i>まだ</span><span><i style="background:var(--card);border-style:dashed;border-color:var(--sub)"></i>あとまわし</span></div>
-    <div class="note" style="text-align:left">語を押すと、あとまわしにしたり戻したりできる。</div>
+    <div class="note" style="text-align:left">分数＝正解した回数／解いた回数（模試の分も入る）。語を押すと、あとまわしにしたり戻したりできる。</div>
     <div class="grid">${tiles}</div>
     <button class="btn" id="home">トップへ</button>`;
   document.getElementById('home').onclick = home;
