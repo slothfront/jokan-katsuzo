@@ -223,6 +223,11 @@ input.ans::placeholder{color:var(--sub);font-size:18px}
 .nav small{display:block;font-size:12px;color:var(--sub);margin-top:2px}
 .nav i{font-style:normal;font-size:22px;color:var(--sub)}
 .nav:disabled{opacity:.45;cursor:default}
+/* トップの時間 */
+.stepper button{box-shadow:0 3px 0 var(--ink)}
+.stepper button:active{transform:translateY(3px);box-shadow:none}
+.home-time{margin:14px 0 0}
+.home-time .muted{font-weight:700;color:var(--ink)}
 /* 区切りの目盛り */
 .ck{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--sub);margin-top:6px;font-weight:700}
 .ck span{margin-right:4px}
@@ -852,7 +857,13 @@ function home(){
     ${TEST.sample ? '<div class="banner">いまはサンプル問題です。本番の範囲はもうすぐ入ります。</div>' : ''}
     <button class="go" id="go"><span class="go-t"><span class="go-ar">▶</span>今日の稽古を${S.days.includes(today()) ? '続ける' : 'はじめる'}</span><small>${esc(plan.sub)}</small></button>
     <div class="go-hint">迷ったら、この赤いボタンだけ押せばOK</div>
-    <div class="setline">${({all:'ぜんぶ', k:'書きだけ', y:'読みだけ'})[S.only]}・${S.min}分・目標${G}点　<button class="link" id="set">変える</button></div>
+    <div class="stepper home-time">
+      <span class="muted">1回の時間</span>
+      <button id="minus" aria-label="1分へらす">−</button>
+      <b id="min">${S.min}分</b>
+      <button id="plus" aria-label="1分ふやす">＋</button>
+    </div>
+    <div class="setline">${({all:'ぜんぶ', k:'書きだけ', y:'読みだけ'})[S.only]}・目標${G}点　<button class="link" id="set">変える</button></div>
     ${plan.kind === 'sweep' ? '<div class="note">本番の前日と当日は総ざらい。新しい段より、覚えた語を確かめるほうが点になる</div>'
       : plan.kind === 'check' ? '<div class="note">前の日までの語を思い出してから、段に進む。これがいちばん効く</div>' : ''}
     ${tRev ? `<div class="note">リベンジ${tRev}語は、いちばん先に出る</div>` : ''}
@@ -897,6 +908,9 @@ function home(){
     <p class="note">記録はこのスマホの中だけに残ります。</p>`;
   document.getElementById('go').onclick = () => startTrain(goPlan());
   document.getElementById('set').onclick = settings;
+  const setMin = d => { S.min = Math.min(30, Math.max(1, S.min + d)); save(); home(); };   // 時間はトップで（本人指示 2026-10-15「気づきにくい」）
+  document.getElementById('minus').onclick = () => setMin(-1);
+  document.getElementById('plus').onclick = () => setMin(1);
   homeDay = today();
   document.getElementById('rand').onclick = randSheet;
   document.getElementById('wrong').onclick = () => startTrain({kind:'wrong'});
@@ -1008,21 +1022,12 @@ function settings(){
         <button data-v="k" class="${S.only === 'k' ? 'on' : ''}">書きだけ</button>
         <button data-v="y" class="${S.only === 'y' ? 'on' : ''}">読みだけ</button>
       </div>
-      <div class="cap" style="margin-top:16px">1回の時間</div>
-      <div class="stepper" style="margin-top:4px">
-        <button id="minus" aria-label="1分へらす">−</button>
-        <b id="min">${S.min}分</b>
-        <button id="plus" aria-label="1分ふやす">＋</button>
-      </div>
       <button class="btn sub" id="goal" style="margin-top:16px">目標を変える<small>いまは${goal()}点・${S.dayGoal}日</small></button>
       <button class="btn" id="sclose">これでOK</button></div>`;
   document.body.appendChild(box);
   const again = () => { home(); settings(); };
   box.onclick = e => { if(e.target === box) box.remove(); };
   box.querySelectorAll('#only button').forEach(b => b.onclick = () => { S.only = b.dataset.v; save(); again(); });
-  const setMin = d => { S.min = Math.min(30, Math.max(1, S.min + d)); save(); again(); };
-  box.querySelector('#minus').onclick = () => setMin(-1);
-  box.querySelector('#plus').onclick = () => setMin(1);
   box.querySelector('#goal').onclick = () => { box.remove(); goalScreen(false); };
   box.querySelector('#sclose').onclick = () => box.remove();
 }
@@ -1733,7 +1738,7 @@ function manual(){
     <div class="note" style="text-align:left">見出しを押すと開く。</div>
     ${sec(1, '毎日の流れ', `
       <p><b>トップの赤いボタン「今日の稽古をはじめる」を押すだけでいい。</b>何を出すかはアプリが決める。2日目からは、最初に「きのうの確認」（前の日までに出た語を最大10語）が出て、そのあと段の続きに進む。</p>
-      <p>出す語（ぜんぶ／書きだけ／読みだけ）・時間（1〜30分）・目標は、赤いボタンの下の「変える」から。時間になったら「もう1・3・5分」か「終わる」を選ぶ。1日1分でも「やった日」になる。</p>
+      <p>時間（1〜30分）は赤いボタンの下の −／＋ で。出す語（ぜんぶ／書きだけ／読みだけ）と目標は、その下の「変える」から。時間になったら「もう1・3・5分」か「終わる」を選ぶ。1日1分でも「やった日」になる。</p>
       <p>前の晩にまとめてやるより、毎日少しずつのほうが忘れにくい。2日目からは速くなる。</p>`, true)}
     ${sec(2, '「覚えた」になるのはいつ？', `
       <p><b>別の日に2回つづけて正解したとき。</b></p>
