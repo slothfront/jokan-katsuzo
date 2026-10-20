@@ -226,6 +226,9 @@ input.ans::placeholder{color:var(--sub);font-size:18px}
 .nav small{display:block;font-size:12px;color:var(--sub);margin-top:2px}
 .nav i{font-style:normal;font-size:22px;color:var(--sub)}
 .nav:disabled{opacity:.45;cursor:default}
+/* 答えの画面の小さな「あとまわし」 */
+.latlink{display:block;margin:10px auto 0;font-size:13px;font-weight:500;color:var(--sub);text-decoration-color:var(--hair)}
+.toast{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));pointer-events:none;transform:translateX(-50%);z-index:40;background:var(--ink);color:var(--on-ink);padding:10px 16px;font-size:14px;white-space:nowrap;animation:pop .3s}
 /* トップの出す語 */
 .home-only{margin-top:16px;box-shadow:0 3px 0 var(--ink)}
 .home-only button{min-height:48px;font-size:16px}
@@ -301,6 +304,7 @@ const TEST = {
   pass: 30,                    // 合格点（本人「確か30点」）＝目標の最低点
   goalStep: 5,                 // 目標は5点きざみ（合格点〜満点）
   goalDefault: 80,             // 目標の初期値（本人指示 2026-10-15）
+  goalMin: 40,                 // 目標の最低点（本人指示 2026-10-20）
   mockKaki: 15,                // 本番の書き取りの問題数（実施要項：第1〜6回は書き15問）
   mockYomi: 5,                 // 本番の読み取りの問題数（同：読み5問）
   range: 'P.76〜87・P.117〜118',
@@ -617,7 +621,7 @@ function groupsOf(x){
 const groupsPer = size => size >= 20 ? 99 : size >= 10 ? 2 : 1;   // 区切りの大きさ→いくつの区切りをまとめて出すか
 if(!S.rnd) S.rnd = {};                                    // 乱取りの周 {all／k／y: {left:まだ出ていない語, miss:この周で間違えた語, r:何周目, n:この周の語数}}（次の回に持ち越す）
 /* 目標：生徒が自分で決める（合格点〜満点・5点きざみ）。未設定なら最初に聞く */
-const clampGoal = g => Math.min(TEST.full, Math.max(TEST.pass, Math.round(g / TEST.goalStep) * TEST.goalStep));
+const clampGoal = g => Math.min(TEST.full, Math.max(TEST.goalMin, Math.round(g / TEST.goalStep) * TEST.goalStep));
 const goal = () => clampGoal(S.goal || TEST.goalDefault);
 /* やる日数の目標：本番までに何日やるか（1日1分でもよい） */
 const maxDays = () => Math.max(1, doneDays().filter(d => d < today()).length + daysLeft());
@@ -1076,7 +1080,7 @@ function goalScreen(first){
         <b id="gv" style="font-size:44px;min-width:130px">${g}点</b>
         <button id="gp" aria-label="5点あげる">＋</button>
       </div>
-      <div class="muted">${TEST.pass}点〜${TEST.full}点（${TEST.goalStep}点きざみ）・あとから変えられる</div>
+      <div class="muted">${TEST.goalMin}点〜${TEST.full}点（${TEST.goalStep}点きざみ）・あとから変えられる</div>
     </div>
     ${showDays ? `<div class="card center">
       <div>本番までに、何日やる？（1日1分でもOK）</div>
@@ -1308,10 +1312,12 @@ function show(){
         <div class="row">
           <button class="btn ok" id="y">正解</button>
           <button class="btn ng" id="n"><span class="sym">×</span>不正解</button>
-        </div>`;
+        </div>
+        ${R.mode === 'train' ? '<button class="link latlink" id="lat">この語はあとまわし（覚えない）</button>' : ''}`;
       bindZoom();
       document.getElementById('y').onclick = () => next(true);
       document.getElementById('n').onclick = () => next(false);
+      bindLater();
     };
   }
   document.getElementById('quit').onclick = () => { if(R.total === 0) return home(); result(true); };
@@ -1326,10 +1332,34 @@ function answered(ok, typed){
     ${ok ? `<div class="full">${item.a.map(esc).join(' ／ ')}</div>` : `<div class="answer" style="font-size:36px">${item.a.map(esc).join('<span class="muted"> ／ </span>')}</div>`}
     ${!ok && R.mode === 'train' ? '<div class="muted center">だいじょうぶ。この語は3問あとに「復活戦」でもう一度出る</div>' : ''}
     ${extra(item)}
-    <button class="btn" id="nx">つぎへ</button>`;
+    <button class="btn" id="nx">つぎへ</button>
+    ${R.mode === 'train' ? '<button class="link latlink" id="lat">この語はあとまわし（覚えない）</button>' : ''}`;
   const b = document.getElementById('nx'); b.focus();
   b.onclick = () => next(ok, true);
+  bindLater();
   bump(ok);
+}
+/* 答えの画面の小さな「あとまわし」：難しい語は覚えないという選択（本人指示 2026-10-20）。記録はせずに次へ */
+function bindLater(){
+  const b = document.getElementById('lat'); if(!b) return;
+  b.onclick = () => {
+    const cur = R.queue[R.pos]; S.later[cur.i] = today(); save();
+    R.queue = R.queue.filter((e, k) => k <= R.pos || e.i !== cur.i);   // この先の出番を消す
+    R.latered = (R.latered || 0) + 1;
+    R.pos++;
+    toast('あとまわしにした（図鑑で戻せる）');
+    if(R.kind === 'check' && R.check.ix.every(i => R.check.done.has(i) || out(i))) return checkDone();
+    if(R.kind === 'wrong' && R.wset.ix.every(i => R.wset.done.has(i) || out(i))) return wrongDone();
+    if(R.kind === 'redo' && R.gset.ix.every(i => R.gset.done.has(i) || out(i))) return redoDone();
+    if(R.kind === 'random'){ const st = rndState(); save(); if(!st.left.length) return roundDone(); }
+    if(R.kind === 'stage'){ const g = sg(R.stage), x = stageById(R.stage), left = sIx(x).filter(i => !g.done.includes(i) && !out(i)).length;
+      if(R.ck && left > 0 && ckWords().every(i => g.done.includes(i) || out(i))) return chunkDone(); }
+    show();
+  };
+}
+function toast(t){
+  const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d);
+  setTimeout(() => d.remove(), 2600);
 }
 function bump(ok){
   const c = document.getElementById('combo');
@@ -1464,7 +1494,7 @@ function checkDone(){
 function closeChunk(){
   const c = R.ck; if(!c) return null;
   const words = ckWords().filter(i => !isLater(i)).length, nm = ckName(c); R.ck = null;
-  if(!c.got) return null;
+  if(!c.got) return {got:words, miss:c.miss, size:c.size, nm, msg:'この区切りはここまで'};   // 正解0のまま（スキップ・あとまわしだけ）で終わった：大きさは変えない
   if(R.fixed || R.whole) return {got:words, miss:c.miss, size:c.size, nm, msg: c.miss === 0 ? 'ノーミス！' : '区切りの語に、ぜんぶ正解'};
   const k = CHUNKS.indexOf(c.size);
   const size = c.miss === 0 ? CHUNKS[Math.min(k + 1, CHUNKS.length - 1)] : c.miss >= 2 ? CHUNKS[0] : c.size;
@@ -1752,7 +1782,7 @@ function manual(){
     ${sec(6, '間違えたとき', `
       <ul><li><b>復活戦</b>：間違えた語は3問あとにもう一度出る</li>
       <li><b>5回つづけて×</b>：「次は行ける！」か「今日はスキップ（明日覚える）」を選べる。スキップした語は次の日に<b>リベンジ</b>としていちばん先に出る</li></ul>`)}
-    ${sec(7, 'あとまわし（捨てる語）', `<p>どうしても覚えられない語は「あとまわし」にできる。5回つづけて×のときの画面か、図鑑で語を押して決める（図鑑から戻すこともできる）。</p>
+    ${sec(7, 'あとまわし（捨てる語）', `<p>難しい語は「覚えない」と決めるのも作戦のひとつ。どうしても覚えられない語は「あとまわし」にできる。<b>答えの画面のいちばん下の小さな「この語はあとまわし」</b>、5回つづけて×のときの画面、図鑑で語を押す、のどれかで決める（図鑑から戻すこともできる）。</p>
       <ul><li>きのうの確認・段・乱取り・間違えた語・復習・総ざらいには出ない</li><li><b>本番模試とめくり札には出る</b>（本番に出るかもしれないのは変わらない）</li>
       <li>あとまわしが残っている段は<b>達成にならない</b></li><li>ほかの語がぜんぶ「覚えた」になったら、戻すか聞く</li></ul>`)}
     ${sec(8, '乱取り・間違えた語', `
