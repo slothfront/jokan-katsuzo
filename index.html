@@ -605,6 +605,14 @@ if(!S.skip) S.skip = {};                                  // 明日覚える字 
 if(!S.days) S.days = [];                                  // 練習した日
 if(!S.checkDays) S.checkDays = [];                        // 「きのうの確認」までやり終えた日
 if(S.mockLast === undefined) S.mockLast = null;           // 前回の模試の点
+if(!(S.secs >= 0)) S.secs = 0;                            // 稽古した時間の合計（秒）。問題の画面にいた時間（1問90秒まで）＋紙の模試の時間
+/* 1問ぶんの時間を足す（放っておいた時間は数えないよう1問90秒まで） */
+function addTime(){ if(R && R.qT){ S.secs += Math.min(90, (Date.now() - R.qT) / 1000); R.qT = null; } }
+function fmtTime(sec){
+  const m = Math.floor(sec / 60);
+  if(sec > 0 && m < 1) return '1分未満';
+  return m >= 60 ? `${Math.floor(m / 60)}時間${m % 60 ? m % 60 + '分' : ''}` : `${m}分`;
+}
 const sg = id => S.stages[id] || (S.stages[id] = {done:[], miss:0, cleared:false, perfect:false});
 const stageById = id => STAGES.find(x => x.id === id);
 /* 段の中で、いま選んでいる種類（ぜんぶ／書きだけ／読みだけ）の語 */
@@ -899,7 +907,7 @@ function home(){
         <div class="foot">${msg}</div>
       </div>
       <div class="kpi wide days">
-        <div><div class="cap">やった日</div><div class="big">${dd}<small> / ${dg}日</small></div></div>
+        <div><div class="cap">やった日</div><div class="big">${dd}<small> / ${dg}日</small></div><div class="foot">合計 <b>${fmtTime(S.secs)}</b></div></div>
         <div class="marks">${dayMarks()}</div>
       </div>
     </div>
@@ -1273,6 +1281,7 @@ function show(){
   }
   if(R.pos >= R.queue.length) return result();
   const cur = R.queue[R.pos], item = QUESTIONS[cur.i], mock = R.mode === 'mock';
+  R.qT = Date.now();   // この問題を出した時刻（合計時間用）
   if(item.t === 'y'){
     app.innerHTML = `${header(cur)}
       <div class="card">
@@ -1343,7 +1352,7 @@ function answered(ok, typed){
 function bindLater(){
   const b = document.getElementById('lat'); if(!b) return;
   b.onclick = () => {
-    const cur = R.queue[R.pos]; S.later[cur.i] = today(); save();
+    const cur = R.queue[R.pos]; addTime(); S.later[cur.i] = today(); save();
     R.queue = R.queue.filter((e, k) => k <= R.pos || e.i !== cur.i);   // この先の出番を消す
     R.latered = (R.latered || 0) + 1;
     R.pos++;
@@ -1369,6 +1378,7 @@ function bump(ok){
 }
 function next(ok, alreadyBumped){
   const cur = R.queue[R.pos];
+  addTime();
   record(cur.i, ok);
   R.total++;
   if(ok){ R.right++; R.combo++; R.maxCombo = Math.max(R.maxCombo, R.combo); } else R.combo = 0;
@@ -1603,7 +1613,7 @@ function mockChoose(){
   document.getElementById('back').onclick = home;
 }
 function startMock(paper){
-  R = newRun('mock'); R.paper = paper; R.kind = 'mock';
+  R = newRun('mock'); R.paper = paper; R.kind = 'mock'; R.t0 = Date.now();
   R.queue = mockQueue().map(i => ({i, revive:false}));
   R.end = Date.now() + MOCK_SEC * 1000; R.minutes = MOCK_SEC / 60;
   if(paper){ R.onTimeUp = () => paperList(true); paperList(false); }
@@ -1622,7 +1632,9 @@ function paperList(timeUp){
         return `<li><span class="pn">${k + 1}</span><span class="pk">${it.t === 'k' ? '書' : '読'}</span><span class="pq">${prompt(it)}</span></li>`; }).join('')}</ol>
     </div>
     <button class="btn" id="grade">答え合わせへ</button>`;
-  document.getElementById('grade').onclick = () => { stopTimer(); R.end = Date.now(); paperGrade(); };
+  document.getElementById('grade').onclick = () => {
+    if(!R.timed){ S.secs += Math.min(MOCK_SEC, (Date.now() - R.t0) / 1000); R.timed = true; save(); }   // 紙で解いた時間
+    stopTimer(); R.end = Date.now(); paperGrade(); };
   document.getElementById('quit').onclick = home;
   if(!timeUp) tick();
 }
@@ -1762,7 +1774,7 @@ function manual(){
     <div class="note" style="text-align:left">見出しを押すと開く。</div>
     ${sec(1, '毎日の流れ', `
       <p><b>トップの赤いボタン「今日の稽古をはじめる」を押すだけでいい。</b>何を出すかはアプリが決める。2日目からは、最初に「きのうの確認」（前の日までに出た語を最大10語）が出て、そのあと段の続きに進む。</p>
-      <p>赤いボタンの下で、出す語（ぜんぶ／読みだけ／書きだけ）と時間（1〜30分）を選ぶ。読みが苦手なら「読みだけ」からでいい。目標は「目標を変える」から。時間になったら「もう1・3・5分」か「終わる」を選ぶ。<b>毎日まず1分やる。</b>1分やればその日は「やった日」。そこから乗ってきたら延長しよう。</p>
+      <p>赤いボタンの下で、出す語（ぜんぶ／読みだけ／書きだけ）と時間（1〜30分）を選ぶ。読みが苦手なら「読みだけ」からでいい。目標は「目標を変える」から。時間になったら「もう1・3・5分」か「終わる」を選ぶ。<b>毎日まず1分やる。</b>1分やればその日は「やった日」。トップの「合計」は、これまでに稽古した時間（問題を解いていた時間）。そこから乗ってきたら延長しよう。</p>
       <p>前の晩にまとめてやるより、毎日少しずつのほうが忘れにくい。2日目からは速くなる。</p>`, true)}
     ${sec(2, '「覚えた」になるのはいつ？', `
       <p><b>別の日に2回つづけて正解したとき。</b></p>
