@@ -623,7 +623,7 @@ if(!S.rnd) S.rnd = {};                                    // 乱取りの周 {al
 /* 目標：生徒が自分で決める（合格点〜満点・5点きざみ）。未設定なら最初に聞く */
 const clampGoal = g => Math.min(TEST.full, Math.max(TEST.goalMin, Math.round(g / TEST.goalStep) * TEST.goalStep));
 const goal = () => clampGoal(S.goal || TEST.goalDefault);
-/* やる日数の目標：本番までに何日やるか（1日1分でもよい） */
+/* やる日数の目標：本番までに何日やるか（毎日まず1分：本人指示 2026-10-20「1分だけでいい、ではなく」） */
 const maxDays = () => Math.max(1, doneDays().filter(d => d < today()).length + daysLeft());
 const defaultDayGoal = () => Math.max(1, daysLeft() - 1);
 const skippedToday = i => S.skip[i] === today();          // 今日はもう出さない
@@ -1083,7 +1083,7 @@ function goalScreen(first){
       <div class="muted">${TEST.goalMin}点〜${TEST.full}点（${TEST.goalStep}点きざみ）・あとから変えられる</div>
     </div>
     ${showDays ? `<div class="card center">
-      <div>本番までに、何日やる？（1日1分でもOK）</div>
+      <div>本番までに、何日やる？（毎日まず1分から）</div>
       <div class="stepper" style="margin:14px 0 6px">
         <button id="dm" aria-label="1日へらす">−</button>
         <b id="dv" style="font-size:44px;min-width:130px">${dg}日</b>
@@ -1174,7 +1174,7 @@ function trial(step){
     <div class="card center">
       <div class="stamp big-stamp">使い方<br>OK</div>
       <div style="margin-top:6px">あとは毎日、トップの<b class="shu">赤いボタン</b>を押すだけ。</div>
-      <div class="muted" style="margin-top:6px">何を出すかはアプリが決める。最初は5語ずつ、慣れてきたら一気に。<br>1日1分でもいい。</div>
+      <div class="muted" style="margin-top:6px">何を出すかはアプリが決める。最初は5語ずつ、慣れてきたら一気に。<br>毎日まず1分。開いたら、もう少し続けよう。</div>
     </div>
     <button class="go" id="go"><span class="go-t"><span class="go-ar">▶</span>今日の稽古をはじめる</span><small>${esc(goPlan().sub)}</small></button>
     <button class="btn sub" id="top">トップを見る</button>`;
@@ -1762,7 +1762,7 @@ function manual(){
     <div class="note" style="text-align:left">見出しを押すと開く。</div>
     ${sec(1, '毎日の流れ', `
       <p><b>トップの赤いボタン「今日の稽古をはじめる」を押すだけでいい。</b>何を出すかはアプリが決める。2日目からは、最初に「きのうの確認」（前の日までに出た語を最大10語）が出て、そのあと段の続きに進む。</p>
-      <p>赤いボタンの下で、出す語（ぜんぶ／読みだけ／書きだけ）と時間（1〜30分）を選ぶ。読みが苦手なら「読みだけ」からでいい。目標は「目標を変える」から。時間になったら「もう1・3・5分」か「終わる」を選ぶ。1日1分でも「やった日」になる。</p>
+      <p>赤いボタンの下で、出す語（ぜんぶ／読みだけ／書きだけ）と時間（1〜30分）を選ぶ。読みが苦手なら「読みだけ」からでいい。目標は「目標を変える」から。時間になったら「もう1・3・5分」か「終わる」を選ぶ。<b>毎日まず1分やる。</b>1分やればその日は「やった日」。そこから乗ってきたら延長しよう。</p>
       <p>前の晩にまとめてやるより、毎日少しずつのほうが忘れにくい。2日目からは速くなる。</p>`, true)}
     ${sec(2, '「覚えた」になるのはいつ？', `
       <p><b>別の日に2回つづけて正解したとき。</b></p>
