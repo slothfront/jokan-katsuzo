@@ -691,14 +691,14 @@ function reading(item){
 function mockQ(item){
   const e = item.e;
   if(!e) return item.q;
-  if(item.t === 'y'){ const w = word(item); return e.includes(w) ? e.replace(w, '［' + w + '］') : item.q; }
+  if(item.t === 'y') return item.q;   // 読みは本番どおり漢字だけ（本人 2026-10-20「書きは文の中で、読みは漢字のみで出題されるみたい」）
   const w = item.w || item.a;
   if(e.includes(w)) return e.replace(w, item.q);                        // 例：但し → ［タダ］し
   const kana = (item.q.match(/［(.+?)］/) || [])[1];
   if(kana && e.includes(item.a)) return e.replace(item.a, '［' + kana + '］');   // 例：据えた → ［ス］えた
   return item.q;
 }
-/* 出題文：模試は文の中で、練習は語だけ */
+/* 出題文：模試の書きは文の中で（読みは漢字だけ）、練習は語だけ */
 const qOf = item => R && R.mode === 'mock' ? mockQ(item) : item.q;
 function filled(item){   // 書きの答えを入れた文（カタカナ部分を漢字に置き換え）
   if(item.t !== 'k') return item.q.replace(/［|］/g,'');
@@ -1561,7 +1561,7 @@ function mockChoose(){
   stopTimer(); clearFx();
   app.innerHTML = `<h1>本番模試</h1>
     <div class="card">
-      <div>本番と同じ<b>20問（読み${TEST.mockYomi}→書き${TEST.mockKaki}）</b>を<b>10分</b>で。本番と同じく<b>文の中</b>で出す（意味は出ない）。</div>
+      <div>本番と同じ<b>20問（読み${TEST.mockYomi}→書き${TEST.mockKaki}）</b>を<b>10分</b>で。本番と同じく、<b>読みは漢字だけ、書きは文の中</b>で出す（意味は出ない）。</div>
       ${S.mockLast !== null ? `<div class="muted" style="margin-top:6px">前回 ${S.mockLast}点・最高 ${S.mockBest}点</div>` : ''}
     </div>
     <button class="btn" id="paper">紙で解く<small>本番と同じ。ノートや裏紙に書いて、あとで答え合わせ</small></button>
@@ -1759,7 +1759,7 @@ function manual(){
       <p><b>間違えた語</b>：間違えた語だけを出す。<b>その日の最初の答えで正解すると外れる</b>（間違えてから正解しただけでは外れない。次の日の最初に正解すれば外れる）。</p>`)}
     ${sec(9, 'めくり札', `<p>採点しないで、めくって見るだけのカード。段ごとか、ぜんぶランダムで。カードを押すと答え、左右にスワイプか「次へ」でめくる。「いつも答えも出す」で両面を一度に見られる。電車の中や、友だちと出し合うときに。<b>記録には残らない</b>（「覚えた」にはならない）。</p>`)}
     ${sec(10, '本番模試', `
-      <p>本番と同じ20問を10分で。<b>読み${TEST.mockYomi}問が先、そのあと書き${TEST.mockKaki}問</b>。文の中の線の部分を答える（意味は出ない）。</p>
+      <p>本番と同じ20問を10分で。<b>読み${TEST.mockYomi}問が先、そのあと書き${TEST.mockKaki}問</b>。読みは漢字だけ、書きは文の中の線のカタカナを答える（意味は出ない）。</p>
       <ul><li><b>紙で解く</b>：一覧を見てノートに書く → 答え合わせで1問ずつ正解／不正解</li>
       <li><b>スマホで解く</b>：1問ずつ答えて採点。0:00で終わり、解けなかった問題は0点</li></ul>
       <p>いちばんよかった点が「最高点」になる。間違えた語は次の日の確認に出る。</p>`)}
