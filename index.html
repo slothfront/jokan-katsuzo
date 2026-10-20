@@ -605,9 +605,9 @@ if(!S.skip) S.skip = {};                                  // 明日覚える字 
 if(!S.days) S.days = [];                                  // 練習した日
 if(!S.checkDays) S.checkDays = [];                        // 「きのうの確認」までやり終えた日
 if(S.mockLast === undefined) S.mockLast = null;           // 前回の模試の点
-if(!(S.secs >= 0)) S.secs = 0;                            // 稽古した時間の合計（秒）。問題の画面にいた時間（1問90秒まで）＋紙の模試の時間
-/* 1問ぶんの時間を足す（放っておいた時間は数えないよう1問90秒まで） */
-function addTime(){ if(R && R.qT){ S.secs += Math.min(90, (Date.now() - R.qT) / 1000); R.qT = null; } }
+if(!(S.secs >= 0)) S.secs = 0;                            // 稽古した時間の合計（秒）。問題の画面にいた時間（1問30秒まで・本人指示 2026-10-20）＋紙の模試の時間
+/* 1問ぶんの時間を足す（放っておいた時間は数えないよう1問30秒まで） */
+function addTime(){ if(R && R.qT){ S.secs += Math.min(30, (Date.now() - R.qT) / 1000); R.qT = null; } }
 function fmtTime(sec){
   const m = Math.floor(sec / 60);
   if(sec > 0 && m < 1) return '1分未満';
