@@ -226,6 +226,12 @@ input.ans::placeholder{color:var(--sub);font-size:18px}
 .nav small{display:block;font-size:12px;color:var(--sub);margin-top:2px}
 .nav i{font-style:normal;font-size:22px;color:var(--sub)}
 .nav:disabled{opacity:.45;cursor:default}
+/* 目標から何語覚えればいいか */
+.gplan{margin-top:12px;border-top:1px dotted var(--hair);padding-top:10px;font-size:15px;line-height:1.7}
+.gplan b{color:var(--shu)}
+.gplan small{display:block;font-size:12px;color:var(--sub)}
+.gline{margin-top:6px;line-height:1.6}
+.gline b{color:var(--ink)}
 /* 記録の中の「次は目標を上げてみる？」（押すと目標の画面へ） */
 .uplink{padding:6px 0;min-height:44px;color:var(--shu);font-size:14px}
 /* 答えの画面の小さな「あとまわし」 */
@@ -639,6 +645,19 @@ if(!S.rnd) S.rnd = {};                                    // 乱取りの周 {al
 /* 目標：生徒が自分で決める（合格点〜満点・5点きざみ）。未設定なら最初に聞く */
 const clampGoal = g => Math.min(TEST.full, Math.max(TEST.goalMin, Math.round(g / TEST.goalStep) * TEST.goalStep));
 const goal = () => clampGoal(S.goal || TEST.goalDefault);
+/* 目標から「何語覚えれば届くか」（E1・本人選択 2026-10-21）。
+   読みは全問正解の前提。書きは範囲の書きの語から本番の問題数がランダムに出ると見て、超幾何分布で
+   「その数以上正解できる確率」が5割＝狙える／9割＝確実 になる語数を出す。配点は満点÷問題数（第5回＝1問5点）の仮定 */
+function goalPlan(G){
+  const per = TEST.full / (TEST.mockKaki + TEST.mockYomi);
+  const need = Math.max(0, Math.ceil(G / per) - TEST.mockYomi);   // 書きで必要な正解数
+  const N = ofType('k').length, n = TEST.mockKaki;
+  const lc = (a, b) => { let r = 0; for(let i = 0; i < b; i++) r += Math.log(a - i) - Math.log(i + 1); return r; };
+  const comb = (a, b) => b < 0 || b > a ? 0 : Math.exp(lc(a, b));
+  const p = K => { let t = 0; for(let x = need; x <= n; x++) t += comb(K, x) * comb(N - K, n - x); return t / comb(N, n); };
+  const at = q => { for(let K = 0; K <= N; K++) if(p(K) >= q) return K; return N; };
+  return {need, N, aim: at(0.5), sure: at(0.9)};
+}
 /* やる日数の目標：本番までに何日やるか（毎日まず1分：本人指示 2026-10-20「1分だけでいい、ではなく」） */
 const maxDays = () => Math.max(1, doneDays().filter(d => d < today()).length + daysLeft());
 const defaultDayGoal = () => Math.max(1, daysLeft() - 1);
@@ -875,6 +894,10 @@ function home(){
   const msg = best === null ? '本番模試で最高点をつくろう'
             : reached ? `目標達成！<br><button class="link uplink" id="goalup">次は目標を上げてみる？ ›</button>`
             : `目標まで あと <b>${G - best}点</b>`;
+  const gpN = goalPlan(G), kw = achieved('k');
+  const kmsg = kw >= gpN.sure ? `書けた語 <b>${kw}語</b>。確実ライン（${gpN.sure}語）を超えた！`
+             : kw >= gpN.aim ? `書けた語 <b>${kw}語</b>。狙えるラインを超えた。確実（${gpN.sure}語）まで あと <b>${gpN.sure - kw}語</b>`
+             : `書けた語 <b>${kw}語</b>。狙える（${gpN.aim}語）まで あと <b>${gpN.aim - kw}語</b>`;
   const tSkip = Object.keys(S.skip).filter(i => skippedToday(+i)).length;
   const tRev = Object.keys(S.skip).filter(i => revenge(+i)).length;
   const dd = doneDays().length, dg = S.dayGoal, nLat = Object.keys(S.later).length;
@@ -917,6 +940,7 @@ function home(){
         <div class="line"><i style="width:${(best || 0) / TEST.full * 100}%"></i>
           <div class="goal-mark${gp > 70 ? ' r' : ''}" style="left:${gp}%"><span>目標 ${G}点</span></div></div>
         <div class="foot">${msg}</div>
+        <div class="foot gline">${G}点は 読み${TEST.mockYomi}問＋書き${gpN.need}問。${kmsg}</div>
       </div>
       <div class="kpi wide days">
         <div><div class="cap">やった日</div><div class="big">${dd}<small> / ${dg}日</small></div><div class="foot">合計 <b>${fmtTime(S.secs)}</b></div></div>
@@ -1102,6 +1126,7 @@ function goalScreen(first){
         <button id="gp" aria-label="5点あげる">＋</button>
       </div>
       <div class="muted">${TEST.goalMin}点〜${TEST.full}点（${TEST.goalStep}点きざみ）・あとから変えられる</div>
+      <div class="gplan" id="gplan"></div>
     </div>
     ${showDays ? `<div class="card center">
       <div>本番までに、何日やる？（毎日まず1分から）</div>
@@ -1114,7 +1139,11 @@ function goalScreen(first){
     </div>` : ''}
     <button class="btn" id="ok">これでいく</button>
     ${first ? '' : '<button class="btn sub" id="back">もどる</button>'}`;
-  const set = d => { g = clampGoal(g + d); document.getElementById('gv').textContent = g + '点'; };
+  const plan = () => { const x = goalPlan(g);
+    document.getElementById('gplan').innerHTML = `<b>${g}点</b>＝読み${TEST.mockYomi}問＋<b>書き${x.need}問</b>（全${TEST.mockKaki}問中）<br>
+      書き${x.N}語のうち <b>${x.aim}語</b>書ければ狙える・<b>${x.sure}語</b>なら確実<small>読みは全問正解・書きはランダムに出る前提の目安</small>`; };
+  const set = d => { g = clampGoal(g + d); document.getElementById('gv').textContent = g + '点'; plan(); };
+  plan();
   document.getElementById('gm').onclick = () => set(-TEST.goalStep);
   document.getElementById('gp').onclick = () => set(TEST.goalStep);
   if(showDays){
@@ -1825,6 +1854,7 @@ function manual(){
       <ul><li><b>達成度</b>：1回でも正解したことのある語の割合（書き・読み別）。下がらない</li>
       <li><b>うち覚えた</b>：メーターの濃い帯。別の日に2回つづけて正解した語</li>
       <li><b>最高点</b>：本番模試のいちばんよかった点。赤い線が自分の目標</li>
+      <li><b>書けた語</b>：目標の点に届くには、書きで何問・何語書ければよいか。<b>狙える</b>＝その語数を書ければ5割の確率で届く、<b>確実</b>＝9割で届く（読み5問は全問正解・書きはランダムに出る前提の目安）</li>
       <li><b>やった日</b>：本番までに練習した日の数。休んでも0に戻らない。■は「きのうの確認」までやった日</li></ul>
       <p>トップの記録は<b>見るだけ</b>（押しても何も起きない）。押せるところには影と「›」がある。</p>
       <p><b>図鑑</b>の分数＝正解した回数／解いた回数。色：墨＝覚えた／金の枠＝あと少し／朱＝苦手（間違えた語）／白＝まだ。</p>`)}
