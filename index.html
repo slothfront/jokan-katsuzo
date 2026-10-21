@@ -221,6 +221,8 @@ input.ans::placeholder{color:var(--sub);font-size:18px}
 .shu{color:var(--shu)}
 /* ほかの稽古 */
 .navs{display:grid;grid-template-columns:1fr 1fr;gap:10px 10px;padding-bottom:3px}
+.rnav .rcap{font-size:13px;font-weight:700;color:var(--sub);text-align:center;border-bottom:1px solid var(--hair);padding-bottom:4px}
+.rnav .rcap:nth-child(2){color:var(--shu)}
 .nav{display:flex;align-items:center;justify-content:space-between;gap:6px;text-align:left;background:var(--card);color:var(--ink);border:1.5px solid var(--ink);border-radius:10px;padding:12px 10px 12px 14px;min-height:64px;cursor:pointer;font:inherit}
 .nav b{display:block;font-family:"Noto Serif JP",serif;font-weight:900;font-size:17px;letter-spacing:.08em}
 .nav small{display:block;font-size:12px;color:var(--sub);margin-top:2px}
@@ -718,7 +720,8 @@ if(!S.later) S.later = {};
 Object.keys(S.later).forEach(i => { if(QUESTIONS[i] && QUESTIONS[i].t === 'y') delete S.later[i]; });   // 読みは必ず全部覚える（本人指示 2026-10-21）                                // あとまわしの語 {問題番号: 決めた日}
 const isLater = i => !!S.later[i];
 /* 練習で出さない語：今日スキップした語・あとまわしの語（模試とめくり札には出す） */
-const out = i => skippedToday(i) || isLater(i);
+const out = i => skippedToday(i) || (isLater(i) && !wideRand());   // 乱取りの「すべて」では外した語も出す
+const wideRand = () => !!(typeof R !== 'undefined' && R && R.kind === 'random' && /A$/.test(R.rk || ''));
 const stageOpen = x => sIx(x).some(i => !sg(x.id).done.includes(i) && !out(i));
 /* 段の達成：あとまわし（外した語）をのぞいて、ぜんぶ正解（本人選択 2026-10-21） */
 const stageComplete = x => x.ix.some(i => sg(x.id).done.includes(i)) && x.ix.every(i => sg(x.id).done.includes(i) || isLater(i));
@@ -857,7 +860,9 @@ function wrongQueue(){ return revengeFirst(wrongIdx().sort(byOld)); }
 /* 乱取り：一周するまで「まだ出ていない語」を持ち越す（ぜんぶ／書き／読みで別々） */
 /* 乱取りの種類（ぜんぶ／書きのみ／読みのみ）：乱取りの中で選ぶ。選ばなければ上の設定のまま */
 const rk = () => (R && R.rk) || S.only;
-function rndAll(k = rk()){ return QUESTIONS.map((q, i) => (k === 'all' || q.t === k) && !isLater(i) ? i : -1).filter(i => i >= 0); }
+/* 乱取りの種類：all／k／y＝覚える語だけ（絞り込み・あとまわしを除く）、allA／kA＝外した語も入れたすべて（本人指示 2026-10-22） */
+function rndAll(k = rk()){ const b = k.replace(/A$/, ''), w = k !== b;
+  return QUESTIONS.map((q, i) => (b === 'all' || q.t === b) && (w || !isLater(i)) ? i : -1).filter(i => i >= 0); }
 /* 1周目＝ぜんぶの語。2周目からは前の周で間違えた語だけ。間違いが0の周で完了 */
 function rndState(k = rk()){
   let st = S.rnd[k];
@@ -870,7 +875,7 @@ function rndLeft(k = rk()){ return rndState(k).left; }
 function rndN(k = rk()){ const st = rndState(k); return st.r === 1 ? rndAll(k).length : st.n; }
 function rndInfo(k){ const st = rndState(k); return st.r === 1 ? `残り${st.left.length}/${rndN(k)}語` : `${kn(st.r)}周目（間違えた語）残り${st.left.length}語`; }
 function randomQueue(){ return revengeFirst(rndLeft().filter(i => !out(i))); }
-function randName(k = S.only){ return ({all:'ぜんぶ', k:'書き', y:'読み'})[k]; }
+function randName(k = S.only){ return ({all:'ぜんぶ', k:'書き', y:'読み', allA:'ぜんぶ（すべて）', kA:'書き（すべて）'})[k]; }
 /* 本番模試：本番と同じく書き15問・読み5問（範囲が足りなければある分だけ） */
 function mockQueue(){
   const pick = (t, n) => shuffle(ofType(t)).slice(0, n);
@@ -1040,12 +1045,17 @@ function home(){
 function randSheet(){
   document.querySelectorAll('.sheet').forEach(x => x.remove());
   const box = document.createElement('div'); box.className = 'sheet';
-  const row = (k, t) => `<button class="nav" data-rk="${k}"><span><b>${t}</b><small>${rndInfo(k)}</small></span><i>›</i></button>`;
+  const row = (k, t, x = '') => `<button class="nav" data-rk="${k}"${x}><span><b>${t}</b><small>${rndInfo(k)}</small></span><i>›</i></button>`;
+  // 2列：左＝すべての語（外した語も出す）／右＝絞り込んだ語だけ。読みは絞り込まないので1つ（本人指示 2026-10-22）
   box.innerHTML = `<div class="sheet-in card">
       <div class="sh-h"><b>乱取り</b><span>ランダムに出す。一周したら間違えた語だけでもう一周</span></div>
-      <div class="navs" style="grid-template-columns:1fr;margin-top:12px">
-        ${row('all', 'ぜんぶ')}${row('k', '書きのみ')}${row('y', '読みのみ')}
+      <div class="navs rnav" style="margin-top:12px">
+        <div class="rcap">すべての語</div><div class="rcap">絞り込んだ語だけ</div>
+        ${row('allA', 'ぜんぶ')}${row('all', 'ぜんぶ')}
+        ${row('kA', '書きのみ')}${row('k', '書きのみ')}
+        ${row('y', '読みのみ', ' style="grid-column:1/-1"')}
       </div>
+      <div class="note" style="margin-top:6px">読みは絞り込まない（全部覚える）ので1つだけ</div>
       <button class="btn sub" id="sclose">やめる</button></div>`;
   document.body.appendChild(box);
   box.onclick = e => { if(e.target === box) box.remove(); };
@@ -1482,7 +1492,7 @@ function show(){
           <button class="btn ok" id="y">正解</button>
           <button class="btn ng" id="n"><span class="sym">×</span>不正解</button>
         </div>
-        ${R.mode === 'train' ? '<button class="link latlink" id="lat">この語はあとまわし（覚えない）</button>' : ''}`;
+        ${R.mode === 'train' && !isLater(R.queue[R.pos].i) ? '<button class="link latlink" id="lat">この語はあとまわし（覚えない）</button>' : ''}`;
       bindZoom();
       document.getElementById('y').onclick = () => next(true);
       document.getElementById('n').onclick = () => next(false);
@@ -1561,7 +1571,7 @@ function askSkip(i, ok){
     </div>
     <button class="btn" id="go2">次は行ける！<small>3問あとにもう一度出る</small></button>
     <button class="btn sub" id="skip">今日はスキップ<small>明日覚える（明日いちばん先に出る）</small></button>
-    ${q.t === 'y' ? '<div class="note">読みは必ず全部覚える（あとまわしにはできない）</div>' : `<button class="btn sub" id="later">あとまわし<small>ほかをぜんぶ覚えたら戻すか聞く（模試とめくり札には出る）</small></button>`}`;
+    ${q.t === 'y' ? '<div class="note">読みは必ず全部覚える（あとまわしにはできない）</div>' : isLater(i) ? '' : `<button class="btn sub" id="later">あとまわし<small>ほかをぜんぶ覚えたら戻すか聞く（模試とめくり札には出る）</small></button>`}`;
   document.getElementById('go2').onclick = () => { st(i).wr = 0; save(); afterAnswer(R.queue[R.pos], ok); };
   if(document.getElementById('later')) document.getElementById('later').onclick = () => tryLater(i, () => {
     R.queue = R.queue.filter((e, k) => k <= R.pos || e.i !== i);   // この先の出番を消す
@@ -1954,10 +1964,10 @@ function manual(){
       <li><b>5回つづけて×</b>：「次は行ける！」か「今日はスキップ（明日覚える）」を選べる。スキップした語は次の日に<b>リベンジ</b>としていちばん先に出る</li></ul>`)}
     ${sec(7, 'あとまわし（捨てる語）', `<p>目標の画面の「書きの語を絞り込む」で、覚える書きの語をまとめて決められる（全部覚える／おまかせで外す＝難しそうな順に十中八九ラインまで／自分で選ぶ）。<b>覚える書きの語は、目標の十中八九ラインより少なくはできない。</b>それより減らそうとすると、外した語から1語戻して入れ替えるか聞かれる。<b>読みは必ず全部覚える</b>（あとまわしにはできない）。目標を上げてラインに足りなくなったら、覚える語を決め直す。</p>
       <p>難しい語は「覚えない」と決めるのも作戦のひとつ。どうしても覚えられない語は「あとまわし」にできる。<b>答えの画面のいちばん下の小さな「この語はあとまわし」</b>、5回つづけて×のときの画面、図鑑で語を押す、のどれかで決める（図鑑から戻すこともできる）。</p>
-      <ul><li>きのうの確認・段・乱取り・間違えた語・復習・総ざらいには出ない</li><li><b>本番模試とめくり札には出る</b>（本番に出るかもしれないのは変わらない）</li>
+      <ul><li>きのうの確認・段・乱取り（絞り込んだ語だけ）・間違えた語・復習・総ざらいには出ない。乱取りの「すべての語」には出る</li><li><b>本番模試とめくり札には出る</b>（本番に出るかもしれないのは変わらない）</li>
       <li>段は、あとまわしの語をのぞいてぜんぶ正解すれば<b>達成</b></li><li>ほかの語がぜんぶ「覚えた」になったら、戻すか聞く</li></ul>`)}
     ${sec(8, '乱取り・間違えた語', `
-      <p><b>乱取り</b>：押すと「ぜんぶ／書きのみ／読みのみ」を選べる。選んだ種類の語をランダムに出す。<b>一周するまで、まだ出ていない語から出る</b>（次の回にも持ち越す）。トップと問題画面に「残り○語」。<b>一周したら、その周で間違えた語だけで次の周</b>（2周目・3周目…）。間違えが0の周で「乱取り完了」→ぜんぶの語で最初から。ぜんぶ・書きのみ・読みのみで別々に数える。</p>
+      <p><b>乱取り</b>：押すと「ぜんぶ／書きのみ／読みのみ」を選べる。ぜんぶと書きのみは、<b>左＝すべての語</b>（外した語も出る）と<b>右＝絞り込んだ語だけ</b>の2つ。選んだ種類の語をランダムに出す。<b>一周するまで、まだ出ていない語から出る</b>（次の回にも持ち越す）。トップと問題画面に「残り○語」。<b>一周したら、その周で間違えた語だけで次の周</b>（2周目・3周目…）。間違えが0の周で「乱取り完了」→ぜんぶの語で最初から。ぜんぶ・書きのみ・読みのみで別々に数える。</p>
       <p><b>間違えた語</b>：間違えた語だけを出す。<b>その日の最初の答えで正解すると外れる</b>（間違えてから正解しただけでは外れない。次の日の最初に正解すれば外れる）。</p>`)}
     ${sec(9, 'めくり札', `<p>採点しないで、めくって見るだけのカード。段ごとか、ぜんぶランダムで。カードを押すと答え、左右にスワイプか「次へ」でめくる。「いつも答えも出す」で両面を一度に見られる。電車の中や、友だちと出し合うときに。<b>記録には残らない</b>（「覚えた」にはならない）。</p>`)}
     ${sec(10, '本番模試', `
