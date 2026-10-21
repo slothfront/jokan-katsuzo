@@ -55,7 +55,7 @@ b{font-weight:700}
 .banner{border:1.5px solid var(--kin);color:var(--kin);padding:10px 12px;font-size:14px;margin-top:10px}
 /* 見出し */
 .head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;border-bottom:2px solid var(--ink);padding-bottom:8px}
-.logo{font-weight:900;font-size:clamp(20px,6.8vw,31px);letter-spacing:.04em;line-height:1;margin:0;white-space:nowrap}
+.logo{font-weight:900;font-size:clamp(20px,6.8vw,31px);letter-spacing:.04em;line-height:1;margin:0;white-space:nowrap;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .dday{font-family:"Noto Serif JP",serif;font-size:13px;white-space:nowrap;text-align:right}
 .dday b{font-size:24px;color:var(--shu);font-weight:900;margin:0 2px}
 .subhead{color:var(--sub);font-size:13px;margin-top:6px}
@@ -631,7 +631,8 @@ function load(){
   try{ const s = JSON.parse(localStorage.getItem(KEY)); if(s && s.items) return s; }catch(e){}
   return {items:{}, days:[], mockBest:null};
 }
-function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+let wiping = false;   // 初期化の最中は書き戻さない
+function save(){ if(wiping) return; try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
 let S = load();
 if(!['all','k','y'].includes(S.only)) S.only = 'all';   // トレーニングで出す種類（ぜんぶ／書きだけ／読みだけ）
 if(!(S.min >= 1 && S.min <= 30)) S.min = 10;            // トレーニングの時間（分・1〜30）
@@ -2030,6 +2031,31 @@ function confetti(){
     box.appendChild(i);
   }
   document.body.appendChild(box); setTimeout(() => { if(fxBox === box) clearFx(); }, 4500);
+}
+/* 隠し初期化（本人指示 2026-10-21「説明するときに使いたいから、どこかに初期化ボタンを隠して」）：
+   どの画面でも題字「コツコツ勝つ常漢」を3秒以内に5回押すと、記録を全部消して最初（目標を決める）から始める */
+let logoTaps = [];
+document.addEventListener('click', e => {
+  if(!e.target.closest('.logo')) return;
+  const t = Date.now(); logoTaps = logoTaps.filter(x => t - x < 3000).concat(t);
+  if(logoTaps.length >= 5){ logoTaps = []; resetSheet(); }
+});
+function resetSheet(){
+  document.querySelectorAll('.sheet').forEach(e => e.remove());
+  const box = document.createElement('div'); box.className = 'sheet';
+  box.innerHTML = `<div class="sheet-in card">
+      <div class="sh-h"><b>初期化</b><span>（説明用）</span></div>
+      <div style="margin:10px 0">このスマホの記録（目標・やった日・覚えた語・模試）を<b>全部消して</b>、最初から始める。<b>元には戻せない。</b></div>
+      <button class="btn" id="rsOk">全部消して最初から</button>
+      <button class="btn sub" id="rsNo">やめる</button></div>`;
+  document.body.appendChild(box);
+  box.querySelector('#rsNo').onclick = () => box.remove();
+  box.onclick = e => { if(e.target === box) box.remove(); };
+  box.querySelector('#rsOk').onclick = () => {
+    stopTimer(); wiping = true;
+    try{ localStorage.removeItem(KEY); }catch(e){}
+    location.reload();
+  };
 }
 home();
 </script>
