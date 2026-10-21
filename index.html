@@ -73,9 +73,10 @@ b{font-weight:700}
 .line .goal-mark span{position:absolute;bottom:100%;left:4px;font-size:12px;color:var(--shu);white-space:nowrap;font-weight:700;margin-bottom:1px}
 .line .goal-mark.r span{left:auto;right:4px}
 .line .goal-mark.b span{bottom:auto;top:100%;margin:1px 0 0}
-.line.two{margin:22px 0 22px}
-.line.two .goal-mark span{font-size:11px}
-.line .goal-mark.c span{left:0;transform:translateX(-50%)}
+.line.two{margin:18px 0 18px}
+.line .goal-mark.gm span{left:0;transform:translateX(-50%);font-size:13px;line-height:1;margin:0 0 2px}
+.line .goal-mark.gm.b span{margin:2px 0 0}
+.kpi .gleg{color:var(--shu);font-weight:700;white-space:nowrap}
 .kpi .foot{font-size:12px;color:var(--sub)}
 .kpi.wide .line{margin-top:22px}
 .kpi.wide .msg{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:14px}
@@ -715,9 +716,8 @@ function tryLater(i, done){
 }
 /* 書きの達成度のバーに、目標の2本（狙える＝上・十中八九＝下）（本人指示 2026-10-22「書きの達成度に目標2つ入れて」） */
 function kMarks(){
-  const x = goalPlan(goal()), mk = (n, t, cls) => { const q = Math.min(100, n / x.N * 100);
-    return `<div class="goal-mark ${cls}${q > 75 ? ' r' : q >= 25 ? ' c' : ''}" style="left:${q}%"><span>${t}${n}語</span></div>`; };   // 線の真上・真下にラベル（端では寄せる）
-  return mk(x.aim, '狙える', '') + mk(x.sure, '十中八九', 'b');
+  const x = goalPlan(goal()), mk = (n, sym, cls) => `<div class="goal-mark gm ${cls}" style="left:${Math.min(100, n / x.N * 100)}%"><span>${sym}</span></div>`;
+  return mk(x.aim, '△', '') + mk(x.sure, '◎', 'b');   // すっきり：記号だけ（本人 2026-10-22「三角と二重丸とかにしてすっきり」）。語数は下の凡例に
 }
 /* やる日数の目標：本番までに何日やるか（毎日まず1分：本人指示 2026-10-20「1分だけでいい、ではなく」） */
 const maxDays = () => Math.max(1, doneDays().filter(d => d < today()).length + daysLeft());
@@ -1000,7 +1000,7 @@ function home(){
         <div class="cap">達成度・${t === 'k' ? '書き' : '読み'}</div>
         <div class="big">${v}<small>%</small></div>
         <div class="line${t === 'k' ? ' two' : ''}"><i class="lo" style="width:${v}%"></i><i style="width:${mv}%"></i>${t === 'k' ? kMarks() : ''}</div>
-        <div class="foot">${achieved(t)} / ${ofType(t).length}語 正解ずみ<br>うち覚えた ${mastered(t)}語（${mv}%）</div></div>`; }).join('')}
+        <div class="foot">${t === 'k' ? `<span class="gleg">△狙える ${gpN.aim}語<br>◎十中八九 ${gpN.sure}語</span><br>` : ''}${achieved(t)} / ${ofType(t).length}語 正解ずみ<br>うち覚えた ${mastered(t)}語（${mv}%）</div></div>`; }).join('')}
       <div class="kpi wide">
         <div class="cap">最高点・本番模試（${TEST.full}点満点）</div>
         <div class="big">${best === null ? '—' : best}<small>${best === null ? '' : '点'}</small></div>
