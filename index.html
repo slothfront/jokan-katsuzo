@@ -226,6 +226,8 @@ input.ans::placeholder{color:var(--sub);font-size:18px}
 .nav small{display:block;font-size:12px;color:var(--sub);margin-top:2px}
 .nav i{font-style:normal;font-size:22px;color:var(--sub)}
 .nav:disabled{opacity:.45;cursor:default}
+/* 記録の中の「次は目標を上げてみる？」（押すと目標の画面へ） */
+.uplink{padding:6px 0;min-height:44px;color:var(--shu);font-size:14px}
 /* 答えの画面の小さな「あとまわし」 */
 .latlink{display:block;margin:10px auto 0;font-size:13px;font-weight:500;color:var(--sub);text-decoration-color:var(--hair)}
 .toast{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));pointer-events:none;transform:translateX(-50%);z-index:40;background:var(--ink);color:var(--on-ink);padding:10px 16px;font-size:14px;white-space:nowrap;animation:pop .3s}
@@ -871,7 +873,7 @@ function home(){
   const G = goal(), gp = Math.min(100, G / TEST.full * 100);
   const reached = best !== null && best >= G;
   const msg = best === null ? '本番模試で最高点をつくろう'
-            : reached ? '目標達成！<br>次は目標を上げてみる？'
+            : reached ? `目標達成！<br><button class="link uplink" id="goalup">次は目標を上げてみる？ ›</button>`
             : `目標まで あと <b>${G - best}点</b>`;
   const tSkip = Object.keys(S.skip).filter(i => skippedToday(+i)).length;
   const tRev = Object.keys(S.skip).filter(i => revenge(+i)).length;
@@ -943,6 +945,7 @@ function home(){
   document.getElementById('go').onclick = () => startTrain(goPlan());
   document.querySelectorAll('#only button').forEach(b => b.onclick = () => { S.only = b.dataset.v; save(); home(); });   // 本人指示 2026-10-15「苦手な人は読みだけやらせたい」
   document.getElementById('goal').onclick = () => goalScreen(false);
+  if(document.getElementById('goalup')) document.getElementById('goalup').onclick = () => goalScreen(false);   // 本人指示 2026-10-21
   const setMin = d => { S.min = Math.min(30, Math.max(1, S.min + d)); save(); home(); };   // 時間はトップで（本人指示 2026-10-15「気づきにくい」）
   document.getElementById('minus').onclick = () => setMin(-1);
   document.getElementById('plus').onclick = () => setMin(1);
