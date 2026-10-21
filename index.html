@@ -236,6 +236,7 @@ input.ans::placeholder{color:var(--sub);font-size:18px}
 .tile.nt.off{border-style:dashed;border-color:var(--sub);opacity:.5}
 .tile.nt.keep{border-width:2px}
 #nMode,#nSort{grid-template-columns:1fr 1fr}
+.warn{margin-top:8px;border-left:4px solid var(--shu);background:var(--shu-bg);padding:6px 10px;font-size:15px}
 /* 目標から何語覚えればいいか */
 .gplan{margin-top:12px;border-top:1px dotted var(--hair);padding-top:10px;font-size:15px;line-height:1.7}
 .gplan b{color:var(--shu)}
@@ -671,6 +672,30 @@ function goalPlan(G){
   const p = K => { let t = 0; for(let x = need; x <= n; x++) t += comb(K, x) * comb(N - K, n - x); return t / comb(N, n); };
   const at = q => { for(let K = 0; K <= N; K++) if(p(K) >= q) return K; return N; };
   return {need, N, aim: at(0.5), sure: at(0.9)};
+}
+/* 覚える書きの語は十中八九ラインより少なくしない（本人指示 2026-10-21）。
+   書きの語をあとまわしにしてラインを下回るときは、そのことを伝えて、外した語から1語戻して入れ替えるか聞く */
+const keepK = () => ofType('k').filter(i => !isLater(i)).length;
+function tryLater(i, done){
+  const x = goalPlan(goal());
+  if(QUESTIONS[i].t !== 'k' || keepK() - 1 >= x.sure){ S.later[i] = today(); save(); return done(); }
+  const back = ofType('k').filter(j => isLater(j));
+  document.querySelectorAll('.sheet').forEach(e => e.remove());
+  const box = document.createElement('div'); box.className = 'sheet';
+  box.innerHTML = `<div class="sheet-in card">
+      <div class="sh-h"><b>${esc(word(QUESTIONS[i]))}</b><span>をあとまわしにする？</span></div>
+      <div style="margin:10px 0">いま覚える書きの語は <b>${keepK()}語</b>。目標${goal()}点の<b>十中八九ライン（${x.sure}語）</b>より少なくはできない。</div>
+      <button class="btn sub" id="lx">やめる<small>あとまわしにしない</small></button>
+      ${back.length ? `<div>外した語から<b>1語戻して入れ替える</b>なら、あとまわしにできる。戻す語を選んで。</div>
+      <div class="grid" style="margin-top:8px">${back.map(j => `<button class="tile" data-b="${j}">${esc(word(QUESTIONS[j]))}<span class="rd">${esc(reading(QUESTIONS[j]))}</span><small>これを戻す</small></button>`).join('')}</div>`
+        : '<div class="muted">外した語がないので、入れ替えもできない。</div>'}</div>`;
+  document.body.appendChild(box);
+  box.querySelectorAll('[data-b]').forEach(b => b.onclick = () => {
+    const j = +b.dataset.b; delete S.later[j]; S.later[i] = today(); save(); box.remove();
+    toast(`${word(QUESTIONS[j])} を戻して、${word(QUESTIONS[i])} をあとまわしにした`); done();
+  });
+  box.querySelector('#lx').onclick = () => box.remove();
+  box.onclick = e => { if(e.target === box) box.remove(); };
 }
 /* やる日数の目標：本番までに何日やるか（毎日まず1分：本人指示 2026-10-20「1分だけでいい、ではなく」） */
 const maxDays = () => Math.max(1, doneDays().filter(d => d < today()).length + daysLeft());
@@ -1171,7 +1196,7 @@ function goalScreen(first){
   }
   const keep = () => { S.goal = g; if(showDays && (dg !== dg0 || S.dayGoal == null)) S.dayGoal = dg; save(); };
   const after = () => first && !S.trialDone ? trial(0) : home();
-  document.getElementById('ok').onclick = () => { keep(); if(first) narrowScreen(after); else home(); };   // 最初は目標のあとに覚える語を決める
+  document.getElementById('ok').onclick = () => { keep(); if(first || keepK() < goalPlan(goal()).sure) narrowScreen(after); else home(); };   // 目標を上げてラインを下回ったら、覚える語を決め直す   // 最初は目標のあとに覚える語を決める
   if(!first) document.getElementById('narrow').onclick = () => { keep(); narrowScreen(home); };
   if(!first) document.getElementById('back').onclick = home;
 }
@@ -1186,6 +1211,7 @@ function narrowScreen(next){
     <div class="card">
       <div>目標 <b>${G}点</b>＝読み${TEST.mockYomi}問＋書き${x.need}問。</div>
       <div>書き${x.N}語のうち <b>${x.sure}語</b>書ければ十中八九・<b>${x.aim}語</b>なら狙える。</div>
+      ${nKeep < x.sure ? `<div class="warn">いまの${nKeep}語では十中八九ライン（${x.sure}語）に足りない。あと${x.sure - nKeep}語戻して。</div>` : ''}
       <div class="muted" style="margin-top:6px">いま覚える語は ${nKeep}語。外した語は練習に出ないけど、模試とめくり札には出る。図鑑からいつでも戻せる。</div>
     </div>
     <button class="btn" id="nAll">全部覚える<small>${x.N}語ぜんぶ${nKeep < x.N ? '（外した語を戻す）' : ''}</small></button>
@@ -1202,19 +1228,21 @@ function narrowScreen(next){
 function narrowList(mode, sort, drop, next){
   const G = goal(), x = goalPlan(G), K = ofType('k');
   const keepN = K.length - drop.size;
-  const status = keepN >= x.sure ? `<b class="ok">十中八九</b>` : keepN >= x.aim ? `<b>狙える</b>` : `<b class="ng">届きにくい</b>`;
+  const status = keepN >= x.sure ? `<b class="ok">十中八九</b>` : `<b class="ng">あと${x.sure - keepN}語</b>`;
   const order = sort === 'hard' ? K.slice().sort((a, b) => (KDIFF[b] || 0) - (KDIFF[a] || 0) || a - b) : K;
   app.innerHTML = `<div class="top"><h1>${mode === 'drop' ? '外す語を選ぶ' : '覚える語を選ぶ'}</h1><button class="btn sub mini" id="nBack">もどる</button></div>
     <div class="seg" id="nMode"><button data-v="drop" class="${mode === 'drop' ? 'on' : ''}">外す語を選ぶ</button><button data-v="keep" class="${mode === 'keep' ? 'on' : ''}">覚える語を選ぶ</button></div>
     <div class="seg" id="nSort" style="margin-top:8px"><button data-v="paper" class="${sort === 'paper' ? 'on' : ''}">用紙の順</button><button data-v="hard" class="${sort === 'hard' ? 'on' : ''}">難しそうな順</button></div>
     <div class="ncount">覚える語 <b>${keepN}</b> / ${K.length}語　${status}<small>十中八九 ${x.sure}語・狙える ${x.aim}語（目標${G}点）</small></div>
     ${mode === 'keep' ? '<button class="link" id="nClear">いったん全部外して、ここから覚える語を選ぶ</button>' : ''}
-    <div class="note" style="text-align:left">${mode === 'drop' ? '外す語を押す（もう一度押すと戻る）' : '覚える語を押す（もう一度押すと外れる）'}</div>
+    <div class="note" style="text-align:left">${mode === 'drop' ? `外す語を押す（もう一度押すと戻る）。十中八九ライン（${x.sure}語）より少なくはできない` : `覚える語を押す（もう一度押すと外れる）。十中八九ライン（${x.sure}語）まで選ぶと決められる`}</div>
     <div class="grid">${order.map(i => { const q = QUESTIONS[i], off = drop.has(i);
       return `<button class="tile nt${off ? ' off' : ' keep'}" data-n="${i}">${esc(word(q))}<span class="rd">${esc(reading(q))}</span><small>${off ? '外す' : '覚える'}</small></button>`; }).join('')}</div>
-    <button class="btn" id="nOk">これで決める<small>覚える語 ${keepN}語</small></button>`;
+    <button class="btn" id="nOk"${keepN < x.sure ? ' disabled' : ''}>これで決める<small>${keepN < x.sure ? `十中八九ライン（${x.sure}語）まで あと${x.sure - keepN}語選んで` : `覚える語 ${keepN}語`}</small></button>`;
   const again = (m = mode, so = sort) => { const y = window.scrollY; narrowList(m, so, drop, next); if(m === mode && so === sort) window.scrollTo(0, y); };
-  app.querySelectorAll('[data-n]').forEach(b => b.onclick = () => { const i = +b.dataset.n; drop.has(i) ? drop.delete(i) : drop.add(i); again(); });
+  app.querySelectorAll('[data-n]').forEach(b => b.onclick = () => { const i = +b.dataset.n;
+    if(!drop.has(i) && mode === 'drop' && K.length - drop.size - 1 < x.sure) return toast(`十中八九ライン（${x.sure}語）より少なくはできない`);
+    drop.has(i) ? drop.delete(i) : drop.add(i); again(); });
   app.querySelectorAll('#nMode button').forEach(b => b.onclick = () => again(b.dataset.v, sort));
   app.querySelectorAll('#nSort button').forEach(b => b.onclick = () => again(mode, b.dataset.v));
   if(document.getElementById('nClear')) document.getElementById('nClear').onclick = () => { K.forEach(i => drop.add(i)); again(); };
@@ -1462,12 +1490,12 @@ function answered(ok, typed){
 /* 答えの画面の小さな「あとまわし」：難しい語は覚えないという選択（本人指示 2026-10-20）。記録はせずに次へ */
 function bindLater(){
   const b = document.getElementById('lat'); if(!b) return;
-  b.onclick = () => {
-    const cur = R.queue[R.pos]; addTime(); S.later[cur.i] = today(); save();
+  b.onclick = () => tryLater(R.queue[R.pos].i, () => {
+    const cur = R.queue[R.pos]; addTime();
     R.queue = R.queue.filter((e, k) => k <= R.pos || e.i !== cur.i);   // この先の出番を消す
     R.latered = (R.latered || 0) + 1;
     R.pos++;
-    toast('あとまわしにした（図鑑で戻せる）');
+    if(!document.querySelector('.toast')) toast('あとまわしにした（図鑑で戻せる）');
     if(R.kind === 'check' && R.check.ix.every(i => R.check.done.has(i) || out(i))) return checkDone();
     if(R.kind === 'wrong' && R.wset.ix.every(i => R.wset.done.has(i) || out(i))) return wrongDone();
     if(R.kind === 'redo' && R.gset.ix.every(i => R.gset.done.has(i) || out(i))) return redoDone();
@@ -1475,7 +1503,7 @@ function bindLater(){
     if(R.kind === 'stage'){ const g = sg(R.stage), x = stageById(R.stage), left = sIx(x).filter(i => !g.done.includes(i) && !out(i)).length;
       if(R.ck && left > 0 && ckWords().every(i => g.done.includes(i) || out(i))) return chunkDone(); }
     show();
-  };
+  });
 }
 function toast(t){
   const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d);
@@ -1515,12 +1543,11 @@ function askSkip(i, ok){
     <button class="btn sub" id="skip">今日はスキップ<small>明日覚える（明日いちばん先に出る）</small></button>
     <button class="btn sub" id="later">あとまわし<small>ほかをぜんぶ覚えたら戻すか聞く（模試とめくり札には出る）</small></button>`;
   document.getElementById('go2').onclick = () => { st(i).wr = 0; save(); afterAnswer(R.queue[R.pos], ok); };
-  document.getElementById('later').onclick = () => {
-    S.later[i] = today(); save();
+  document.getElementById('later').onclick = () => tryLater(i, () => {
     R.queue = R.queue.filter((e, k) => k <= R.pos || e.i !== i);   // この先の出番を消す
     R.latered = (R.latered || 0) + 1;
     afterAnswer(R.queue[R.pos], ok);
-  };
+  });
   document.getElementById('skip').onclick = () => {
     S.skip[i] = today(); save();
     R.queue = R.queue.filter((e, k) => k <= R.pos || e.i !== i);   // この先の出番を消す
@@ -1905,7 +1932,7 @@ function manual(){
     ${sec(6, '間違えたとき', `
       <ul><li><b>復活戦</b>：間違えた語は3問あとにもう一度出る</li>
       <li><b>5回つづけて×</b>：「次は行ける！」か「今日はスキップ（明日覚える）」を選べる。スキップした語は次の日に<b>リベンジ</b>としていちばん先に出る</li></ul>`)}
-    ${sec(7, 'あとまわし（捨てる語）', `<p>目標の画面の「書きの語を絞り込む」で、覚える書きの語をまとめて決められる（全部覚える／おまかせで外す＝難しそうな順に十中八九ラインまで／自分で選ぶ）。</p>
+    ${sec(7, 'あとまわし（捨てる語）', `<p>目標の画面の「書きの語を絞り込む」で、覚える書きの語をまとめて決められる（全部覚える／おまかせで外す＝難しそうな順に十中八九ラインまで／自分で選ぶ）。<b>覚える書きの語は、目標の十中八九ラインより少なくはできない。</b>それより減らそうとすると、外した語から1語戻して入れ替えるか聞かれる。目標を上げてラインに足りなくなったら、覚える語を決め直す。</p>
       <p>難しい語は「覚えない」と決めるのも作戦のひとつ。どうしても覚えられない語は「あとまわし」にできる。<b>答えの画面のいちばん下の小さな「この語はあとまわし」</b>、5回つづけて×のときの画面、図鑑で語を押す、のどれかで決める（図鑑から戻すこともできる）。</p>
       <ul><li>きのうの確認・段・乱取り・間違えた語・復習・総ざらいには出ない</li><li><b>本番模試とめくり札には出る</b>（本番に出るかもしれないのは変わらない）</li>
       <li>段は、あとまわしの語をのぞいてぜんぶ正解すれば<b>達成</b></li><li>ほかの語がぜんぶ「覚えた」になったら、戻すか聞く</li></ul>`)}
@@ -1968,7 +1995,8 @@ function laterSheet(i){
   const close = () => box.remove();
   box.onclick = e => { if(e.target === box) close(); };
   box.querySelector('#lc').onclick = close;
-  box.querySelector('#lt').onclick = () => { if(on) delete S.later[i]; else S.later[i] = today(); save(); close(); const y = window.scrollY; zukan(); window.scrollTo(0, y); };
+  const redraw = () => { const y = window.scrollY; zukan(); window.scrollTo(0, y); };
+  box.querySelector('#lt').onclick = () => { close(); if(on){ delete S.later[i]; save(); redraw(); } else tryLater(i, redraw); };
 }
 function confetti(){
   clearFx();
