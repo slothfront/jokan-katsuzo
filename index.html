@@ -73,9 +73,10 @@ b{font-weight:700}
 .line .goal-mark span{position:absolute;bottom:100%;left:4px;font-size:12px;color:var(--shu);white-space:nowrap;font-weight:700;margin-bottom:1px}
 .line .goal-mark.r span{left:auto;right:4px}
 .line .goal-mark.b span{bottom:auto;top:100%;margin:1px 0 0}
-.line.two{margin:18px 0 18px}
+.line.two{margin:18px 0 6px}
 .line .goal-mark.gm span{left:0;transform:translateX(-50%);font-size:13px;line-height:1;margin:0 0 2px}
-.line .goal-mark.gm.b span{margin:2px 0 0}
+.line .goal-mark.gm.nl span{transform:translateX(-175%)}
+.line .goal-mark.gm.nr span{transform:translateX(-75%)}
 .kpi .gleg{color:var(--shu);font-weight:700;white-space:nowrap}
 .kpi .foot{font-size:12px;color:var(--sub)}
 .kpi.wide .line{margin-top:22px}
@@ -716,8 +717,9 @@ function tryLater(i, done){
 }
 /* 書きの達成度のバーに、目標の2本（狙える＝上・十中八九＝下）（本人指示 2026-10-22「書きの達成度に目標2つ入れて」） */
 function kMarks(){
-  const x = goalPlan(goal()), mk = (n, sym, cls) => `<div class="goal-mark gm ${cls}" style="left:${Math.min(100, n / x.N * 100)}%"><span>${sym}</span></div>`;
-  return mk(x.aim, '△', '') + mk(x.sure, '◎', 'b');   // すっきり：記号だけ（本人 2026-10-22「三角と二重丸とかにしてすっきり」）。語数は下の凡例に
+  const x = goalPlan(goal()), qa = Math.min(100, x.aim / x.N * 100), qs = Math.min(100, x.sure / x.N * 100), near = qs - qa < 10;
+  const mk = (q, sym, cls) => `<div class="goal-mark gm${near ? ' ' + cls : ''}" style="left:${q}%"><span>${sym}</span></div>`;
+  return mk(qa, '△', 'nl') + mk(qs, '◎', 'nr');   // 両方とも線の上に記号だけ（本人 2026-10-22「三角と二重丸とかにしてすっきり」「両方上」）。近いときは左右に振り分ける。語数は下の凡例に
 }
 /* やる日数の目標：本番までに何日やるか（毎日まず1分：本人指示 2026-10-20「1分だけでいい、ではなく」） */
 const maxDays = () => Math.max(1, doneDays().filter(d => d < today()).length + daysLeft());
