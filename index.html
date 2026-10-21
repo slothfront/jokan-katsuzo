@@ -975,7 +975,7 @@ function home(){
       <b id="min">${S.min}分</b>
       <button id="plus" aria-label="1分ふやす">＋</button>
     </div>
-    <div class="setline">目標${G}点・${S.dayGoal}日　<button class="link" id="goal">目標を変える</button></div>
+    <div class="setline">目標${G}点・${S.dayGoal}日・覚える書きの語${keepK()}語<br><button class="link" id="goal">目標を変える</button>　<button class="link" id="narrowH">覚える語を変える</button></div>
     ${plan.kind === 'sweep' ? '<div class="note">本番の前日と当日は総ざらい。新しい段より、覚えた語を確かめるほうが点になる。ワークの句も1回通しておこう</div>'
       : plan.kind === 'check' ? '<div class="note">前の日までの語を思い出してから、段に進む。これがいちばん効く</div>' : ''}
     ${tRev ? `<div class="note">リベンジ${tRev}語は、いちばん先に出る</div>` : ''}
@@ -1022,6 +1022,7 @@ function home(){
   document.getElementById('go').onclick = () => startTrain(goPlan());
   document.querySelectorAll('#only button').forEach(b => b.onclick = () => { S.only = b.dataset.v; save(); home(); });   // 本人指示 2026-10-15「苦手な人は読みだけやらせたい」
   document.getElementById('goal').onclick = () => goalScreen(false);
+  document.getElementById('narrowH').onclick = () => narrowScreen(home);   // 目標の画面以外からも（本人指示 2026-10-21）
   if(document.getElementById('goalup')) document.getElementById('goalup').onclick = () => goalScreen(false);   // 本人指示 2026-10-21
   const setMin = d => { S.min = Math.min(30, Math.max(1, S.min + d)); save(); home(); };   // 時間はトップで（本人指示 2026-10-15「気づきにくい」）
   document.getElementById('minus').onclick = () => setMin(-1);
@@ -1985,7 +1986,7 @@ function manual(){
   document.getElementById('home2').onclick = home;
 }
 function zukan(){
-  clearFx();
+  clearFx(); window.scrollTo(0, 0);
   const tiles = QUESTIONS.map((q, i) => {
     const l = isWrong(i) ? 0 : level(i);
     const it = S.items[i] || {}, cnt = `<span class="cnt">${it.ok || 0}/${it.seen || 0}</span>`;   // 正解した回数／解いた回数（本人指示 2026-10-15）
@@ -1995,10 +1996,12 @@ function zukan(){
     <div class="legend"><span><i style="background:var(--ink);border-color:var(--ink)"></i>覚えた</span><span><i style="border:1.5px solid var(--kin)"></i>あと少し</span>
       <span><i style="background:var(--shu-bg);border-color:var(--shu)"></i>苦手</span><span><i style="background:var(--card)"></i>まだ</span><span><i style="background:var(--card);border-style:dashed;border-color:var(--sub)"></i>あとまわし</span></div>
     <div class="note" style="text-align:left">分数＝正解した回数／解いた回数（模試の分も入る）。語を押すと、あとまわしにしたり戻したりできる。</div>
+    <button class="btn sub" id="zNarrow">覚える書きの語を変える<small>いま${keepK()} / ${ofType('k').length}語・十中八九ライン${goalPlan(goal()).sure}語（目標${goal()}点）</small></button>
     <div class="grid">${tiles}</div>
     <button class="btn" id="home">トップへ</button>`;
   document.getElementById('home').onclick = home;
   document.getElementById('home2').onclick = home;
+  document.getElementById('zNarrow').onclick = () => narrowScreen(zukan);   // 本人指示 2026-10-21
   document.querySelectorAll('[data-z]').forEach(b => b.onclick = () => laterSheet(+b.dataset.z));
 }
 /* 図鑑：1語をあとまわしにする／戻す */
