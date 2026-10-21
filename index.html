@@ -238,9 +238,17 @@ input.ans::placeholder{color:var(--sub);font-size:18px}
 #nMode,#nSort{grid-template-columns:1fr 1fr}
 .warn{margin-top:8px;border-left:4px solid var(--shu);background:var(--shu-bg);padding:6px 10px;font-size:15px}
 /* 目標から何語覚えればいいか */
-.gplan{margin-top:12px;border-top:1px dotted var(--hair);padding-top:10px;font-size:15px;line-height:1.7}
-.gplan b{color:var(--shu)}
-.gplan small{display:block;font-size:12px;color:var(--sub)}
+.gplan{margin-top:14px;border:2px solid var(--shu);border-radius:4px;padding:12px 10px 10px;text-align:center}
+.gplan .gq{font-size:14px;font-weight:700}
+.gplan .gq b{color:var(--shu)}
+.gplan .gn{margin:2px 0 0;font-size:15px;font-weight:700;white-space:nowrap}
+.gplan .gt{font-size:12px;color:var(--sub);margin-bottom:10px}
+.gplan .gn b{font-family:"Noto Serif JP",serif;font-size:34px;font-weight:900;color:var(--shu);line-height:1.1;margin:0 2px}
+.gplan .gw{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+.gplan .gw div{border:1.5px solid var(--hair);border-radius:4px;padding:8px 4px 6px;font-size:13px;line-height:1.3}
+.gplan .gw div.sure{border-color:var(--shu);background:var(--shu-bg)}
+.gplan .gw b{display:block;font-family:"Noto Serif JP",serif;font-size:34px;font-weight:900;color:var(--shu);line-height:1.15}
+.gplan small{display:block;margin-top:8px;font-size:12px;color:var(--sub)}
 .gline{margin-top:6px;line-height:1.6}
 .gline b{color:var(--ink)}
 /* 記録の中の「次は目標を上げてみる？」（押すと目標の画面へ） */
@@ -1184,9 +1192,7 @@ function goalScreen(first){
     <button class="btn" id="ok">これでいく</button>
     ${first ? '' : `<button class="btn sub" id="narrow">書きの語を絞り込む<small>覚える語を決める（いまは${ofType('k').filter(i => !isLater(i)).length}語）</small></button>`}
     ${first ? '' : '<button class="btn sub" id="back">もどる</button>'}`;
-  const plan = () => { const x = goalPlan(g);
-    document.getElementById('gplan').innerHTML = `<b>${g}点</b>＝読み${TEST.mockYomi}問＋<b>書き${x.need}問</b>（全${TEST.mockKaki}問中）<br>
-      書き${x.N}語のうち <b>${x.aim}語</b>書ければ狙える・<b>${x.sure}語</b>なら十中八九<small>読みは全問正解・書きはランダムに出る前提の目安</small>`; };
+  const plan = () => { document.getElementById('gplan').innerHTML = gplanHTML(g); };
   const set = d => { g = clampGoal(g + d); document.getElementById('gv').textContent = g + '点'; plan(); };
   plan();
   document.getElementById('gm').onclick = () => set(-TEST.goalStep);
@@ -1203,6 +1209,16 @@ function goalScreen(first){
   if(!first) document.getElementById('back').onclick = home;
 }
 
+/* 目標に要る問題数と語数（目標の画面・覚える語を決める画面。本人「もっと目立つように」2026-10-21） */
+function gplanHTML(G){
+  const x = goalPlan(G);
+  return `<div class="gq"><b>${G}点</b>に必要なのは</div>
+    <div class="gn">読み<b>${TEST.mockYomi}</b>問 ＋ 書き<b>${x.need}</b>問</div>
+    <div class="gt">読みは${TEST.mockYomi}問中・書きは${TEST.mockKaki}問中</div>
+    <div class="gq">書き${x.N}語のうち、覚えておきたい語</div>
+    <div class="gw"><div>狙える<b>${x.aim}語</b>5割で届く</div><div class="sure">十中八九<b>${x.sure}語</b>9割で届く</div></div>
+    <small>読みは全問正解・書きはランダムに出る前提の目安</small>`;
+}
 /* 書きの語を絞り込む（本人指示 2026-10-21）：全部覚える／おまかせで外す（難しそうな順に十中八九ラインまで）／自分で選ぶ。
    外した語は「あとまわし」と同じ（練習に出ない・模試とめくり札には出る・図鑑で戻せる・段の達成に数えない） */
 function narrowScreen(next){
@@ -1211,14 +1227,15 @@ function narrowScreen(next){
   app.innerHTML = `<div class="head"><h1 class="logo">コツコツ勝つ常漢</h1></div>
     <h1 style="margin-top:18px">覚える書きの語を決める</h1>
     <div class="card">
-      <div>目標 <b>${G}点</b>＝読み${TEST.mockYomi}問＋書き${x.need}問。</div>
-      <div>書き${x.N}語のうち <b>${x.sure}語</b>書ければ十中八九・<b>${x.aim}語</b>なら狙える。</div>
+      <div class="gplan" style="margin-top:0">${gplanHTML(G)}</div>
       ${nKeep < x.sure ? `<div class="warn">いまの${nKeep}語では十中八九ライン（${x.sure}語）に足りない。あと${x.sure - nKeep}語戻して。</div>` : ''}
       <div class="muted" style="margin-top:6px">いま覚える語は ${nKeep}語。外した語は練習に出ないけど、模試とめくり札には出る。図鑑からいつでも戻せる。</div>
     </div>
     <button class="btn" id="nAll">全部覚える<small>${x.N}語ぜんぶ${nKeep < x.N ? '（外した語を戻す）' : ''}</small></button>
     <button class="btn sub" id="nAuto"${cut ? '' : ' disabled'}>おまかせで外す<small>${cut ? `難しそうな順に${cut}語を外して、十中八九の${x.sure}語にする` : 'この目標では外せる語がない'}</small></button>
-    <button class="btn sub" id="nSelf">自分で選ぶ<small>外す語を選ぶ／覚える語を選ぶ</small></button>`;
+    <button class="btn sub" id="nSelf">自分で選ぶ<small>外す語を選ぶ／覚える語を選ぶ</small></button>
+    ${nKeep >= x.sure ? `<button class="btn sub" id="nStay">このまま（変えない）<small>いまの${nKeep}語のまま</small></button>` : ''}`;
+  if(document.getElementById('nStay')) document.getElementById('nStay').onclick = next;   // 何も変えずに戻る（本人指摘 2026-10-21）
   document.getElementById('nAll').onclick = () => { K.forEach(i => delete S.later[i]); save(); next(); };
   document.getElementById('nAuto').onclick = () => {
     K.forEach(i => delete S.later[i]);
