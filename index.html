@@ -340,10 +340,10 @@ const TEST = {
   title: '第5回 常用漢字テスト',
   date: '2026-10-26',          // 本番の日
   full: 100,                   // 満点（本人「多分100点満点」＝20問×5点）
-  pass: 30,                    // 合格点（本人「確か30点」）＝目標の最低点
+  pass: 35,                    // 合格点（本人 2026-10-22「35点で合格」。前は「確か30点」）
   goalStep: 5,                 // 目標は5点きざみ（合格点〜満点）
   goalDefault: 80,             // 目標の初期値（本人指示 2026-10-15）
-  goalMin: 40,                 // 目標の最低点（本人指示 2026-10-20）
+  goalMin: 35,                 // 目標の最低点＝合格点（本人指示 2026-10-22「35点で合格だったから。最低目標下げて」。前は40）
   mockKaki: 15,                // 本番の書き取りの問題数（実施要項：第1〜6回は書き15問）
   mockYomi: 5,                 // 本番の読み取りの問題数（同：読み5問）
   range: 'P.76〜87・P.117〜118',
@@ -1202,7 +1202,7 @@ function goalScreen(first){
         <b id="gv" style="font-size:44px;min-width:130px">${g}点</b>
         <button id="gp" aria-label="5点あげる">＋</button>
       </div>
-      <div class="muted">${TEST.goalMin}点〜${TEST.full}点（${TEST.goalStep}点きざみ）・あとから変えられる</div>
+      <div class="muted">${TEST.goalMin}点（合格）〜${TEST.full}点（${TEST.goalStep}点きざみ）・あとから変えられる</div>
       <div class="gplan" id="gplan"></div>
     </div>
     ${showDays ? `<div class="card center">
