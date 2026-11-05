@@ -2455,6 +2455,26 @@ function resetSheet(){
     location.reload();
   };
 }
+/* スマホの「戻る」（Androidの戻るボタン・スワイプ）でアプリが閉じないように（本人 2026-11-05「戻ろうとするとアプリ自体が閉じちゃう」）。
+   戻るを押すと、その画面の「やめる／もどる／トップへ」などを押したのと同じにする。トップで押したときは閉じずに案内だけ */
+const BACK_BTNS = ['quit', 'tskip', 'back', 'nBack', 'home', 'top', 'keep', 'fin'];
+function onBack(){
+  const z = document.querySelector('.zoom'); if(z){ z.remove(); return; }
+  const sh = [...document.querySelectorAll('.sheet')].pop();
+  if(sh){ const b = sh.querySelector('#sclose, #lx, #lc, #rsNo'); b ? b.click() : sh.remove(); return; }
+  if(document.querySelector('.go-hint')) return toast('閉じるときは、スマホのホーム画面へ');   // トップ
+  for(const id of BACK_BTNS){
+    const b = document.getElementById(id);
+    if(b && b.offsetParent !== null && !b.disabled){ b.click(); return; }
+  }
+  if(R) return toast('画面のボタンから選んでね');   // 問題の途中の選ぶ画面（記録がずれないよう勝手に抜けない）
+  home();
+}
+try{
+  history.replaceState({jk: 'base'}, '');
+  history.pushState({jk: 'app'}, '');
+  addEventListener('popstate', () => { history.pushState({jk: 'app'}, ''); onBack(); });
+}catch(e){}
 home();
 </script>
 </body>
