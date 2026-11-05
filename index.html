@@ -351,7 +351,30 @@ const TEST05 = {
   mockKaki: 15,                // 本番の書き取りの問題数（実施要項：第1〜6回は書き15問）
   mockYomi: 5,                 // 本番の読み取りの問題数（同：読み5問）
   range: 'P.76〜87・P.117〜118',
-  sample: false                // サンプル問題のときtrue（注意書きを出す）
+  sample: false,               // サンプル問題のときtrue（注意書きを出す）
+  /* 本番の20問（国語科の第五回 本番の入力シートから。本人 2026-11-05「これ第5回の本番」）。同じ文・同じ順 */
+  honban: [
+    {t:'k', q:"［ツイトウ］集会を開く。", a:"追悼", w:"追悼"},
+    {t:'k', q:"申し出を［キョヒ］する。", a:"拒否", w:"拒否"},
+    {t:'k', q:"自信を［ソウシツ］する。", a:"喪失", w:"喪失"},
+    {t:'k', q:"［コンダン］会に出席する。", a:"懇談", w:"懇談"},
+    {t:'k', q:"［ケッカン］商品の回収。", a:"欠陥", w:"欠陥"},
+    {t:'k', q:"通信の［バイタイ］。", a:"媒体", w:"媒体"},
+    {t:'k', q:"［ゼンシ］に傷のある熊。", a:"前肢", w:"前肢"},
+    {t:'k', q:"［ユイイツ］無二の親友だ。", a:"唯一", w:"唯一"},
+    {t:'k', q:"彼の弱点が［ロテイ］する。", a:"露呈", w:"露呈"},
+    {t:'k', q:"［シヘイ］の価値が流動する。", a:"紙幣", w:"紙幣"},
+    {t:'k', q:"記録に［チョウセン］する。", a:"挑戦", w:"挑戦"},
+    {t:'k', q:"［センリュウ］で風刺する。", a:"川柳", w:"川柳"},
+    {t:'k', q:"野菜の［サイバイ］。", a:"栽培", w:"栽培"},
+    {t:'k', q:"［カクシン］をつく意見だ。", a:"核心", w:"核心"},
+    {t:'k', q:"交通［ジュウタイ］にはまる。", a:"渋滞", w:"渋滞"},
+    {t:'y', q:"収益が［漸増］傾向だ。", a:["ぜんぞう"]},
+    {t:'y', q:"敵を［一蹴］する。", a:["いっしゅう"]},
+    {t:'y', q:"［羨望］の的となる。", a:["せんぼう"]},
+    {t:'y', q:"切手を［貼付］する。", a:["ちょうふ"]},
+    {t:'y', q:"民衆が［蜂起］する。", a:["ほうき"]},
+  ]
 };
 /* 問題：t='y'＝読み（a＝ひらがな・複数可）／t='k'＝書き（a＝漢字・w＝送り仮名まで入れた語）。［ ］の中が出題部分
    m＝意味（書きは問題に出すので答えの漢字を含めない）／e＝例文（答えの画面に出す）。意味と例文はClaudeが作成（2026-10-14）
@@ -1328,6 +1351,7 @@ function home(){
     ${nLat ? `<div class="note">あとまわし${nLat}語（練習には出ない・模試とめくり札には出る。図鑑で戻せる）</div>` : ''}
     <div class="sec">ほかの稽古</div>
     <div class="navs">
+      ${TEST.honban ? nav('hon', '本番の' + TEST.honban.length + '問', `${esc(TEST.title.split(' ')[0])}の本番そのまま${S.hon && S.hon.best != null ? '・最高' + S.hon.best + '点' : '・追試の前に'}`) : ''}
       ${nav('rand', '乱取り', 'ぜんぶ・書きのみ・読みのみ')}
       ${nav('wrong', '間違えた語', wrongIdx().length ? `${randName()}・${wrongIdx().length}語` : 'いまは0語', !wrongIdx().length)}
       ${nav('mock', '本番模試', '20問・10分')}
@@ -1354,6 +1378,7 @@ function home(){
   document.getElementById('wrong').onclick = () => startTrain({kind:'wrong'});
   document.querySelectorAll('[data-st]').forEach(b => b.onclick = () => stageSheet(b.dataset.st));
   document.getElementById('mock').onclick = mockChoose;
+  if(document.getElementById('hon')) document.getElementById('hon').onclick = honTop;
   document.getElementById('zukan').onclick = zukan;
   document.getElementById('manual').onclick = manual;
   document.getElementById('send').onclick = sendSheet;
@@ -2455,6 +2480,110 @@ function resetSheet(){
     location.reload();
   };
 }
+/* ---------- 本番の20問（その回の本番そのまま。追試の前に完璧にする用。本人 2026-11-05「本試験を完璧にすればいくらか点が取れるらしい」） ----------
+   問題は TEST.honban（本番と同じ文・同じ順：書き①〜⑮→読み⑯〜⑳）。ふだんの記録（覚えた・段など）とは別に S.hon に残す */
+const HON = () => TEST.honban || [];
+const maru = k => String.fromCharCode(0x2460 + k);   // ①〜⑳
+function honS(){ if(!S.hon) S.hon = {best: null, last: null, perfect: 0, wrong: []}; return S.hon; }
+function honTop(){
+  stopTimer(); clearFx(); R = null; window.scrollTo(0, 0);
+  const h = honS(), n = HON().length, nw = h.wrong.length;
+  app.innerHTML = `<div class="head"><h1 class="logo">コツコツ勝つ常漢</h1></div>
+    <h1 style="margin-top:18px">${esc(TEST.title.split(' ')[0])}　本番の${n}問</h1>
+    <div class="note">${esc(TEST.title)}の本番と<b>同じ問題・同じ順</b>（書き①〜⑮ → 読み⑯〜⑳）。追試の前に、これを<b>全問正解</b>にしよう。</div>
+    <div class="kpis" style="margin:14px 0">
+      <div class="kpi"><div class="cap">最高点</div><div class="big">${h.best == null ? '—' : h.best}<small>${h.best == null ? '' : ' / ' + TEST.full + '点'}</small></div><div class="foot">${h.last == null ? 'まだ解いていない' : `前回 <b>${h.last}点</b>`}</div></div>
+      <div class="kpi"><div class="cap">満点をとった回数</div><div class="big">${h.perfect}<small> 回</small></div><div class="foot">追試の前の日にも満点を</div></div>
+    </div>
+    <button class="btn" id="honGo">${n}問を解く<small>1問ずつ。書きは自分で採点、読みは自動で判定</small></button>
+    <button class="btn sub" id="honWrong"${nw ? '' : ' disabled'}>間違えた問題だけ<small>${nw ? `いま${nw}問` : 'いまは0問'}</small></button>
+    <button class="btn sub" id="honList">答えの一覧を見る<small>紙に書いて覚えるときに</small></button>
+    <button class="btn sub" id="back">もどる</button>`;
+  document.getElementById('honGo').onclick = () => honRun(HON().map((_, k) => k), true);
+  document.getElementById('honWrong').onclick = () => honRun([...h.wrong].sort((a, b) => a - b), false);
+  document.getElementById('honList').onclick = honList;
+  document.getElementById('back').onclick = home;
+}
+function honList(){
+  window.scrollTo(0, 0);
+  app.innerHTML = `<div class="top"><span class="kind">本番の${HON().length}問・答え</span><button class="btn sub mini" id="back">もどる</button></div>
+    <ol class="paper">${HON().map((it, k) => `<li><span class="pn">${maru(k)}</span><span class="pk">${it.t === 'y' ? '読み' : '書き'}</span>
+      <span><span class="pq">${sentence(it.q)}</span><br><b style="color:var(--shu);font-size:20px">${esc(it.t === 'y' ? it.a.join('／') : it.a)}</b></span></li>`).join('')}</ol>
+    <button class="btn sub" id="back2">もどる</button>`;
+  document.getElementById('back').onclick = honTop;
+  document.getElementById('back2').onclick = honTop;
+}
+function honRun(list, full){
+  const H = {list, full, pos: 0, right: 0, miss: []};
+  const h = honS();
+  const mark = (k, ok) => { h.wrong = h.wrong.filter(x => x !== k); if(!ok) h.wrong.push(k); save(); };
+  const step = () => {
+    if(H.pos >= H.list.length) return honDone(H);
+    const k = H.list[H.pos], it = HON()[k];
+    const top = `<div class="top"><span class="kind">本番 ${maru(k)}　${H.pos + 1}/${H.list.length}</span><button class="btn sub mini" id="quit">やめる</button></div>`;
+    const done = ok => { if(ok) H.right++; else H.miss.push(k); mark(k, ok); H.pos++; step(); };
+    if(it.t === 'y'){
+      app.innerHTML = `${top}<div class="card">
+          <div class="ask">線の部分の読みを、ひらがなで</div>
+          <div class="q">${sentence(it.q)}</div>
+          <form id="f" autocomplete="off">
+            <input class="ans" id="in" inputmode="text" lang="ja" enterkeyhint="done" placeholder="ひらがなで入力">
+            <button class="btn" type="submit">こたえる</button>
+          </form>
+          <button class="btn sub" id="pass">わからない</button></div>`;
+      const inp = document.getElementById('in'); inp.focus();
+      inp.addEventListener('keydown', e => { if(e.key === 'Enter' && (e.isComposing || e.keyCode === 229)) e.preventDefault(); });
+      const judge = (ok, typed) => {
+        app.querySelector('.card').innerHTML = `<div class="q">${sentence(it.q)}</div>
+          <div class="judge ${ok ? 'ok' : 'ng'}">${ok ? '正解' : (typed ? `「${esc(typed)}」ではなく` : '答えは')}</div>
+          <div class="${ok ? 'full' : 'answer'}"${ok ? '' : ' style="font-size:36px"'}>${it.a.map(esc).join(' ／ ')}</div>
+          <button class="btn" id="nx">つぎへ</button>`;
+        const b = document.getElementById('nx'); b.focus(); b.onclick = () => done(ok);
+      };
+      document.getElementById('f').onsubmit = e => { e.preventDefault(); const v = norm(inp.value); if(!v) return; judge(it.a.some(a => norm(a) === v), inp.value); };
+      document.getElementById('pass').onclick = () => judge(false, '');
+    }else{
+      app.innerHTML = `${top}<div class="card">
+          <div class="ask">線のカタカナを漢字に。<br>頭の中で（書ける場所なら指や紙に）書いてから、答えを見よう</div>
+          <div class="q">${sentence(it.q)}</div>
+          <button class="btn" id="open">答えを見る</button></div>`;
+      document.getElementById('open').onclick = () => {
+        app.querySelector('.card').innerHTML = `<div class="q">${sentence(it.q)}</div>
+          ${chars(it)}
+          <div class="full">${esc(filled(it))}</div>
+          <div class="self">頭の中で書いた字と、ぴったり同じだった？</div>
+          <div class="crit">${CRIT}</div>
+          <div class="row"><button class="btn ok" id="y">正解</button><button class="btn ng" id="n"><span class="sym">×</span>不正解</button></div>`;
+        bindZoom();
+        document.getElementById('y').onclick = () => done(true);
+        document.getElementById('n').onclick = () => done(false);
+      };
+    }
+    document.getElementById('quit').onclick = honTop;   // 途中でやめたら点は記録しない（間違えた問題の記録は残る）
+  };
+  step();
+}
+function honDone(H){
+  const h = honS(), n = H.list.length, all = HON().length;
+  const score = Math.round(TEST.full * H.right / Math.max(1, all));
+  if(H.full){ h.last = score; if(h.best == null || score > h.best) h.best = score; if(H.right === all) h.perfect++; save(); }
+  window.scrollTo(0, 0);
+  app.innerHTML = `<div class="head"><h1 class="logo">コツコツ勝つ常漢</h1></div>
+    <div class="card center">
+      <div class="muted">${H.full ? `本番の${all}問（${TEST.full}点満点）` : `間違えた問題 ${n}問`}</div>
+      <div style="font-family:'Noto Serif JP',serif;font-weight:900;font-size:64px;line-height:1.2">${H.full ? score + '点' : `${H.right} / ${n}`}</div>
+      <div>${H.miss.length ? `あと <b>${H.miss.length}問</b>。間違えた問題だけをくり返そう` : '<b>全問正解！</b> 追試の前の日にもう一度やろう'}</div>
+    </div>
+    ${H.miss.length ? `<ol class="paper">${H.miss.map(k => { const it = HON()[k];
+      return `<li><span class="pn">${maru(k)}</span><span><span class="pq">${sentence(it.q)}</span><br><b style="color:var(--shu);font-size:20px">${esc(it.t === 'y' ? it.a.join('／') : it.a)}</b></span></li>`; }).join('')}</ol>` : ''}
+    ${h.wrong.length ? `<button class="btn" id="again">間違えた問題をもう一度<small>${h.wrong.length}問</small></button>` : ''}
+    <button class="btn sub" id="back">本番の${all}問へ</button>
+    <button class="btn sub" id="home">トップへ</button>`;
+  if(document.getElementById('again')) document.getElementById('again').onclick = () => honRun([...h.wrong].sort((a, b) => a - b), false);
+  document.getElementById('back').onclick = honTop;
+  document.getElementById('home').onclick = home;
+}
+
 /* スマホの「戻る」（Androidの戻るボタン・スワイプ）でアプリが閉じないように（本人 2026-11-05「戻ろうとするとアプリ自体が閉じちゃう」）。
    戻るを押すと、その画面の「やめる／もどる／トップへ」などを押したのと同じにする。トップで押したときは閉じずに案内だけ */
 const BACK_BTNS = ['quit', 'tskip', 'back', 'nBack', 'home', 'top', 'keep', 'fin'];
