@@ -52,6 +52,7 @@ b{font-weight:700}
 #quit{min-width:72px}
 .row{display:flex;gap:10px;margin:10px 0}
 .row>.btn{flex:1;font-size:16px;padding:14px 6px;white-space:nowrap;margin:0}
+.hmsg{margin:12px 0}.hmsg .stamp{float:right;width:58px;height:58px;font-size:13px;margin:0 0 6px 8px}.hmsg-b{display:flex;gap:8px;margin-top:12px;justify-content:center}
 .banner{border:1.5px solid var(--kin);color:var(--kin);padding:10px 12px;font-size:14px;margin-top:10px}
 /* 見出し */
 .head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;border-bottom:2px solid var(--ink);padding-bottom:8px}
@@ -1269,6 +1270,7 @@ function dayMarks(){
 }
 
 let homeDay = null;
+let HOME_MSG = null;   // トップの上に出すお知らせ（その日だけ・あとまわし／おかえり）
 function refreshIfNewDay(){ if(!document.hidden && !R && homeDay && homeDay !== today()) home(); }
 document.addEventListener('visibilitychange', refreshIfNewDay);
 window.addEventListener('pageshow', refreshIfNewDay);
@@ -1277,10 +1279,14 @@ function home(){
   stopTimer(); clearFx(); R = null;
   if(S.goal == null) return goalScreen(true);
   if(S.dayGoal == null){ S.dayGoal = defaultDayGoal(); save(); }
+  // 「あとまわしの語を戻す？」「おかえり」は別の画面にせず、トップの上にカードで出す（本人 2026-11-09「トップ画面に行くまでに時間かかるのストレス」）
+  if(!HOME_MSG || HOME_MSG.day !== today()) HOME_MSG = {day: today(), later: null, welcome: false};
   const lat = Object.keys(S.later).map(Number);
-  if(lat.length && S.laterAsked !== today() && QUESTIONS.every((_, i) => isLater(i) || (S.items[i] && S.items[i].everM))) return laterBack(lat);
+  if(!HOME_MSG.later && lat.length && S.laterAsked !== today() && QUESTIONS.every((_, i) => isLater(i) || (S.items[i] && S.items[i].everM))){ HOME_MSG.later = lat; S.laterAsked = today(); save(); }
   const last = doneDays().filter(d => d < today()).pop();
-  if(last && last <= addDays(today(), -2) && S.welcomed !== today() && daysLeft() >= 0) return welcome();
+  if(!HOME_MSG.later && last && last <= addDays(today(), -2) && S.welcomed !== today() && daysLeft() >= 0){ HOME_MSG.welcome = true; S.welcomed = today(); save(); }
+  if(HOME_MSG.later && !Object.keys(S.later).length) HOME_MSG.later = null;
+  const wPool = HOME_MSG.welcome && !S.days.includes(today()) ? (sweepDay() ? [] : checkPool()) : null;
   STAGES.forEach(x => { const g = sg(x.id); if(!g.cleared && stageComplete(x)){ g.cleared = true; save(); } });   // 外した語だけが残った段は達成
   const best = S.mockBest, left = daysLeft(), plan = goPlan(), nx = nextStage();
   const G = goal(), gp = Math.min(100, G / TEST.full * 100);
@@ -1304,6 +1310,8 @@ function home(){
     <div class="subhead">${esc(TEST.title)}（${esc(TEST.range || '')}）</div>
     ${kaiSeg()}
     ${TEST.sample ? '<div class="banner">いまはサンプル問題です。本番の範囲はもうすぐ入ります。</div>' : ''}
+    ${HOME_MSG.later ? laterCard(HOME_MSG.later) : ''}
+    ${wPool ? welcomeCard(wPool) : ''}
     <button class="go" id="go"><span class="go-t"><span class="go-ar">▶</span>今日の稽古を${S.days.includes(today()) ? '続ける' : 'はじめる'}</span><small>${esc(plan.sub)}</small></button>
     <div class="go-hint">迷ったら、この赤いボタンだけ押せばOK</div>
     <div class="seg home-only" id="only">
@@ -1365,6 +1373,16 @@ function home(){
     <p class="note">記録はこのスマホの中だけに残ります。送りたいときだけ「記録を送信」で画像にして送れます。</p>
     <p class="note">このアプリは佐藤が作った非公式のものです。国語科の公式の教材ではありません。</p>`;   // 本人指示 2026-10-22「私は国語科ではないのでアプリも非公式」
   document.getElementById('go').onclick = () => startTrain(goPlan());
+  if(document.getElementById('back1')){
+    document.getElementById('back1').onclick = () => { S.later = {}; HOME_MSG.later = null; save(); home(); };
+    document.getElementById('keep').onclick = () => { HOME_MSG.later = null; home(); };
+  }
+  if(document.getElementById('three')) document.getElementById('three').onclick = () => {
+    HOME_MSG.welcome = false;
+    if(wPool.length) startTrain({kind:'check', n:3, short:true});
+    else { const m = S.min; S.min = 3; const p = goPlan(); startTrain(p); S.min = m; save(); }
+  };
+  if(document.getElementById('wclose')) document.getElementById('wclose').onclick = () => { HOME_MSG.welcome = false; home(); };
   bindKai();
   document.querySelectorAll('#only button').forEach(b => b.onclick = () => { S.only = b.dataset.v; save(); home(); });   // 本人指示 2026-10-15「苦手な人は読みだけやらせたい」
   document.getElementById('goal').onclick = () => goalScreen(false);
@@ -1481,41 +1499,22 @@ function roundDone(){
   document.getElementById('fin').onclick = () => result();
 }
 /* あとまわし以外がぜんぶ「覚えた」になった：戻すか聞く */
-function laterBack(lat){
-  S.laterAsked = today(); save();
-  app.innerHTML = `<div class="head"><h1 class="logo">コツコツ勝つ常漢</h1></div>
-    <h1 style="margin-top:18px">ほかはぜんぶ覚えた</h1>
-    <div class="card center">
-      <div class="stamp big-stamp">ぜんぶ<br>覚えた</div>
-      <div>あとまわしにした語が <b>${lat.length}語</b> ある。</div>
+function laterCard(lat){   // トップの上のカード（もとは別の画面「ほかはぜんぶ覚えた」）
+  return `<div class="card center hmsg">
+      <div class="stamp">ぜんぶ<br>覚えた</div>
+      <div><b>ほかはぜんぶ覚えた！</b> あとまわしにした語が <b>${lat.length}語</b> ある。練習に戻す？</div>
       <div class="grid" style="margin-top:10px">${lat.map(i => `<div class="tile">${esc(word(QUESTIONS[i]))}<span class="rd">${esc(reading(QUESTIONS[i]))}</span></div>`).join('')}</div>
-      <div style="margin-top:10px">この語を、練習に戻す？</div>
-    </div>
-    <button class="btn" id="back1">戻す<small>きのうの確認・段・乱取りにまた出る</small></button>
-    <button class="btn sub" id="keep">まだいい<small>また今度聞く（図鑑からいつでも戻せる）</small></button>`;
-  confetti();
-  document.getElementById('back1').onclick = () => { S.later = {}; save(); home(); };
-  document.getElementById('keep').onclick = home;
+      <div class="hmsg-b"><button class="btn mini" id="back1">戻す</button><button class="btn mini sub" id="keep">まだいい</button></div>
+    </div>`;
 }
-/* 2日以上あいて開いたとき */
-function welcome(){
-  clearFx();
-  S.welcomed = today(); save();
-  const nx = nextStage(), pool = sweepDay() ? [] : checkPool();
-  app.innerHTML = `<div class="head"><h1 class="logo">コツコツ勝つ常漢</h1></div>
-    <h1 style="margin-top:18px">おかえり</h1>
-    <div class="card">
-      ${nx ? `<div>${esc(nx.label)}は <b>${sg(nx.id).done.length}/${nx.ix.length}</b> まで進んでるよ。</div>` : '<div>段はぜんぶ達成ずみ。</div>'}
-      <div style="margin-top:6px">${pool.length ? 'まず確認3語だけやろう。それだけで今日の1日になる。' : 'まず3分だけやろう。それだけで今日の1日になる。'}</div>
+function welcomeCard(pool){   // 2日以上あいて開いたとき（もとは別の画面「おかえり」）
+  const nx = nextStage();
+  return `<div class="card hmsg">
+      <div><b>おかえり。</b>${nx ? `${esc(nx.label)}は <b>${sg(nx.id).done.length}/${nx.ix.length}</b> まで進んでるよ。` : '段はぜんぶ達成ずみ。'}
+      ${pool.length ? 'まず確認3語だけでも、今日の1日になる。' : 'まず3分だけでも、今日の1日になる。'}</div>
       <div class="note" style="text-align:left">やった日は ${doneDays().length}日。途切れても0には戻らない。</div>
-    </div>
-    <button class="btn" id="three">${pool.length ? '3語だけやる' : '3分だけやる'}</button>
-    <button class="btn sub" id="top">トップへ</button>`;
-  document.getElementById('three').onclick = () => {
-    if(pool.length) startTrain({kind:'check', n:3, short:true});
-    else { const m = S.min; S.min = 3; const p = goPlan(); startTrain(p); S.min = m; save(); }
-  };
-  document.getElementById('top').onclick = home;
+      <div class="hmsg-b"><button class="btn mini" id="three">${pool.length ? '3語だけやる' : '3分だけやる'}</button><button class="btn mini sub" id="wclose">閉じる</button></div>
+    </div>`;
 }
 /* 目標を決める画面（最初に開いたとき／トップの「目標を変える」）：目標点（何日やるかは聞かない・2026-11-05） */
 function goalScreen(first){
