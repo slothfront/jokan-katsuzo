@@ -2606,5 +2606,11 @@ try{
 }catch(e){}
 home();
 </script>
+<script>
+// ネットが無くても開けるようにする（一度ネットありで開いたスマホだけ。記録には触らない）
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('./sw.js').catch(function(){}); });
+}
+</script>
 </body>
 </html>
