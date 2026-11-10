@@ -1114,8 +1114,8 @@ function record(i, ok){
    NOTIFY の値が空のあいだは、ボタンも出ず何も送らない */
 const NOTIFY = {
   gas: '',     // GASのウェブアプリのURL（…/exec）
-  vapid: '',   // Firebase：Cloud Messaging → ウェブプッシュ証明書の鍵ペア
-  firebase: { apiKey: '', authDomain: '', projectId: '', messagingSenderId: '', appId: '' }
+  vapid: 'BPCnkLh601Yqi1mYE_g0Cem_MGddTsyGZgH0Lrp_AIMmNiELlFJbI_2Y6B0ZPmFsAPCAGsQjLB6VxMpvbBm6vlQ',   // Firebase：Cloud Messaging → ウェブプッシュ証明書の鍵ペア
+  firebase: { apiKey: 'AIzaSyCYr5xeWhqXBBJQ3rh2k7bKJABogyZohZY', authDomain: 'jokan-katsuzo.firebaseapp.com', projectId: 'jokan-katsuzo', messagingSenderId: '192129636732', appId: '1:192129636732:web:8d74892aa81bb335ee6cf9' }
 };
 const NK = {dev: 'jokan:dev', on: 'jokan:notify', q: 'jokan:doneq', sent: 'jokan:donesent', tok: 'jokan:tokday'};
 function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
