@@ -66,3 +66,26 @@ self.addEventListener('fetch', (e) => {
     );
   }
 });
+
+// 毎日19時のお知らせ（GAS→Firebase→ここ）。届いたら通知を出し、押されたらアプリを開く
+self.addEventListener('push', (e) => {
+  let p = {};
+  try { p = e.data ? e.data.json() : {}; } catch (err) {}
+  const n = p.notification || p.data || {};
+  e.waitUntil(self.registration.showNotification(n.title || 'コツコツ勝つ常漢', {
+    body: n.body || '今日の稽古はまだ。1分だけでも、今日の1日になる。',
+    icon: 'icon-192.png',
+    tag: 'jokan-daily',
+    data: { url: n.url || './' }
+  }));
+});
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((ws) => {
+      for (const w of ws) { if (new URL(w.url).pathname.startsWith(new URL('./', self.registration.scope).pathname) && 'focus' in w) return w.focus(); }
+      return self.clients.openWindow((e.notification.data && e.notification.data.url) || './');
+    })
+  );
+});
